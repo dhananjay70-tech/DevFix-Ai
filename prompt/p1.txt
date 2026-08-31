@@ -1,0 +1,57 @@
+The scan endpoint is still returning HTTP 500, but the backend terminal only shows:
+
+POST /api/repositories/dhananjay70-tech/My-Leet-Code-Practice/scan 500 343.942 ms - 851
+
+GitHub OAuth is configured and working.
+
+I need you to debug the ACTUAL scan failure, not guess.
+
+1. Inspect the route/controller/service handling:
+   POST /api/repositories/:owner/:repo/scan
+
+2. Trace the entire call chain until the exact failing line.
+
+3. Fix the backend error logging temporarily/permanently so that when this endpoint fails, the terminal prints:
+   - error message
+   - stack trace
+   - controller/service where it failed
+
+4. Reproduce the request yourself.
+
+5. Pay special attention to the previous frontend error mentioning:
+   "users is not defined"
+   Search the entire backend scan flow for undefined variables/references such as `users`.
+
+6. Do NOT create a fake `users` variable just to remove the error. Determine the correct authenticated user object/database model/token source.
+
+7. Verify that the scan uses the GitHub account currently connected through OAuth:
+   @dhananjay70-tech
+
+8. Verify repository access using the real GitHub API.
+
+9. Verify the repository scan/clone operation.
+
+10. Verify the call from Node Backend → ai-backend if the scan invokes it.
+
+11. Verify ai-backend is running on port 8000 and its API contract matches what Node Backend sends.
+
+12. Verify database operations if scan results are persisted.
+
+13. Do not add mock data, fake errors, fake scan results, or fake GitHub responses.
+
+14. After fixing, actually run:
+
+POST /api/repositories/dhananjay70-tech/My-Leet-Code-Practice/scan
+
+and confirm it returns HTTP 200/201 with a real scan result.
+
+If another error appears after fixing the first one, continue debugging until the real repository scan completes.
+
+At the end report:
+- exact root cause
+- exact failing file + line
+- files changed
+- actual API response
+- whether real repository files were scanned
+- whether Gemini was called
+- exact commands required to run the complete system

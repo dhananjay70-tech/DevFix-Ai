@@ -1,0 +1,177 @@
+Build the AI backend for my DevFix AI project using Python, FastAPI, LangChain, and LangGraph.
+
+IMPORTANT:
+Create ONLY the AI microservice.
+Do not modify the React frontend or Node.js core backend.
+
+TECH STACK:
+- Python
+- FastAPI
+- LangChain
+- LangGraph
+- Pydantic
+- httpx
+- PostgreSQL/Redis ready architecture
+- OpenAI-compatible LLM configuration through environment variables
+
+PROJECT STRUCTURE:
+
+ai-backend/
+├── app/
+│   ├── main.py
+│   ├── config.py
+│   ├── agents/
+│   ├── graph/
+│   ├── tools/
+│   ├── services/
+│   ├── models/
+│   └── utils/
+├── .env.example
+├── requirements.txt
+└── README.md
+
+CORE WORKFLOW:
+
+GitHub Issue
+    ↓
+Supervisor Agent
+    ↓
+Repository Analysis Agent
+    ↓
+Code Localization Agent
+    ↓
+Root Cause Agent
+    ↓
+Fix Generation Agent
+    ↓
+Test Agent
+    ↓
+Security Review Agent
+    ↓
+Human Approval
+    ↓
+Pull Request
+
+LANGGRAPH:
+
+Create a LangGraph StateGraph with shared AgentState containing:
+
+- issue_id
+- repository
+- issue_title
+- issue_description
+- relevant_files
+- code_context
+- root_cause
+- proposed_fix
+- test_results
+- security_results
+- confidence
+- current_agent
+- progress
+- retry_count
+- approval_required
+- status
+
+Create nodes for:
+
+1. supervisor
+2. analyze_repository
+3. locate_code
+4. find_root_cause
+5. generate_fix
+6. run_tests
+7. security_review
+8. human_approval
+9. finalize
+
+Add conditional routing:
+- If tests fail → return to fix generation
+- Maximum 3 retries
+- If security risk is high → require human approval
+- If everything passes → move to approval/finalization
+
+LANGCHAIN:
+
+Use LangChain for:
+- LLM interaction
+- Prompt templates
+- Structured output
+- Tool calling
+
+Create tools:
+
+- get_repository_info
+- get_issue
+- list_repository_files
+- read_file
+- search_code
+- get_file_content
+- run_tests
+- get_git_diff
+
+For now, tools can use mock/local implementations but keep them separated so GitHub API and sandbox execution can be connected later.
+
+FASTAPI ENDPOINTS:
+
+GET /health
+
+POST /api/ai/analyze
+Start an AI investigation for an issue.
+
+POST /api/ai/run
+Run the complete LangGraph workflow.
+
+GET /api/ai/runs/{run_id}
+Return current agent status, progress, root cause, test results, and security results.
+
+POST /api/ai/runs/{run_id}/approve
+Resume the workflow after human approval.
+
+POST /api/ai/runs/{run_id}/reject
+Reject the proposed fix.
+
+Use Pydantic request/response models.
+
+RESPONSE SHOULD INCLUDE:
+
+{
+  "run_id": "...",
+  "status": "running",
+  "current_agent": "root_cause",
+  "progress": 65,
+  "confidence": 0.91,
+  "root_cause": "...",
+  "proposed_fix": "...",
+  "test_results": {},
+  "security_results": {}
+}
+
+CONFIGURATION:
+
+Use .env:
+
+LLM_PROVIDER=
+LLM_MODEL=
+OPENAI_API_KEY=
+NODE_CORE_API_URL=
+REDIS_URL=
+DATABASE_URL=
+
+Do not hardcode API keys.
+
+IMPORTANT ARCHITECTURE:
+
+Node.js = core business service
+FastAPI = AI/agent service
+
+FastAPI should communicate with Node.js through REST APIs.
+
+Keep agents, tools, graph, services, and API routes separated.
+
+Add proper logging and error handling.
+
+Do not build unnecessary UI.
+Do not implement real GitHub OAuth yet.
+Do not add unnecessary agents.
+Make the code modular and easy to extend.

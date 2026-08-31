@@ -1,0 +1,158 @@
+Implement the "Connect GitHub" feature in my existing DevFix AI project.
+
+IMPORTANT:
+Do not redesign the UI.
+Do not modify OTP/Google authentication.
+Use the existing React + Vite frontend and Node.js backend.
+Do not touch the FastAPI AI backend yet.
+
+GOAL:
+When the user clicks "Connect GitHub":
+
+React
+→ Node.js
+→ GitHub OAuth
+→ GitHub authorization
+→ Callback to Node.js
+→ Save GitHub account/token for the logged-in user
+→ Redirect to Dashboard
+→ Show "GitHub Connected"
+
+BACKEND:
+
+Implement GitHub OAuth in Node.js.
+
+Routes:
+
+GET  /api/github/connect
+GET  /api/github/callback
+GET  /api/github/status
+POST /api/github/disconnect
+GET  /api/github/repos
+GET  /api/github/repos/:owner/:repo/issues
+GET  /api/github/repos/:owner/:repo/pulls
+
+Use environment variables:
+
+GITHUB_CLIENT_ID=
+GITHUB_CLIENT_SECRET=
+GITHUB_CALLBACK_URL=http://localhost:5000/api/github/callback
+
+Use the authenticated DevFix user from the existing JWT authentication.
+
+DATABASE:
+
+Add GitHub connection information to the existing user/GitHub account model:
+
+- githubId
+- githubUsername
+- githubAvatar
+- githubAccessToken
+- connectedAt
+
+Store tokens securely.
+Never expose the GitHub access token to the frontend.
+
+AFTER CONNECTION:
+
+Dashboard should show:
+
+GitHub Connected ✓
+@githubUsername
+
+The "Connect GitHub" button should change to:
+
+GitHub Connected
+[Manage]
+
+REPOSITORIES:
+
+After GitHub connection, fetch the user's repositories.
+
+Show:
+
+Repository name
+Owner
+Language
+Stars
+Open issues
+Private/Public
+Last updated
+
+Add:
+
+"Analyze" button
+
+ISSUES:
+
+When a repository is selected, fetch its GitHub issues.
+
+Show:
+
+Issue number
+Title
+Labels
+Status
+Created date
+Updated date
+
+Add:
+
+"Start Investigation"
+
+PULL REQUESTS:
+
+Fetch repository pull requests.
+
+Show:
+
+PR number
+Title
+Author
+Status
+Created date
+
+ERROR HANDLING:
+
+Handle:
+- OAuth failure
+- GitHub API failure
+- expired/invalid token
+- rate limit
+- user cancels GitHub authorization
+
+Show proper UI error messages.
+
+SECURITY:
+
+- Keep GitHub secrets only in backend .env
+- Never expose client secret
+- Never return access token to React
+- Protect GitHub API routes with existing JWT middleware
+- Use proper OAuth state protection against CSRF
+
+FRONTEND:
+
+Connect the existing "Connect GitHub" button to:
+
+GET /api/github/connect
+
+Do not create a new dashboard.
+
+Use the existing Repositories page and populate it with real GitHub repositories instead of mock repositories after connection.
+
+MAIN FLOW:
+
+Login
+→ Dashboard
+→ Connect GitHub
+→ GitHub Authorization
+→ Callback
+→ Dashboard
+→ GitHub Connected
+→ Repositories
+→ Select Repository
+→ Issues
+→ Start Investigation
+
+Keep the existing DevFix AI UI and styling unchanged.

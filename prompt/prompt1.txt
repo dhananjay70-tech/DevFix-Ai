@@ -1,0 +1,89 @@
+Improve the existing DevFix AI React + Vite frontend.
+
+Do NOT rebuild the entire project. Keep the existing routing, components, and structure where possible.
+
+Focus mainly on the Dashboard and make it look like a premium production developer platform similar to GitHub + Linear + Vercel.
+
+Design:
+- Dark-first UI
+- Clean black/charcoal background
+- Subtle borders
+- Compact professional cards
+- Blue/purple accent
+- Excellent spacing and typography
+- No excessive gradients or animations
+- Responsive
+
+Dashboard layout:
+
+1. Top header
+"DevFix AI"
+Subtitle: "AI-powered autonomous software engineering"
+Right side:
+[Connect GitHub] [New Investigation]
+
+2. KPI row
+- Open Issues
+- Active Investigations
+- Fixes Generated
+- Pull Requests
+- Fix Success Rate
+
+3. Main section
+Left (larger):
+"Active Investigations"
+
+Show 3 realistic investigation cards with:
+- Repository
+- Issue number + title
+- Current agent
+- Progress bar
+- Status
+- AI confidence
+- Last activity
+- "View Investigation"
+
+Right:
+"AI System Status"
+
+Show:
+- Supervisor Agent ● Online
+- Code Agent ● Online
+- Test Agent ● Online
+- Security Agent ● Online
+- GitHub API ● Connected
+- AI Service ● Online
+
+4. Bottom section
+
+Left:
+"Recent Agent Activity"
+
+Show a timeline of:
+Issue Analysis → Root Cause → Code Fix → Tests → Security Review → PR
+
+Right:
+"Repositories"
+
+Show 4 repositories with:
+name, language, open issues, last activity, Analyze button.
+
+5. Add a small "Pending Approvals" section:
+Show PR/fix awaiting human review with:
+issue, confidence, tests passed, files changed, [Review]
+
+IMPORTANT:
+The dashboard should immediately communicate:
+"DevFix AI is actively investigating and fixing software issues."
+
+Use realistic mock data, not lorem ipsum.
+
+Keep existing sidebar navigation:
+Dashboard
+Repositories
+Issue Analysis
+PR Review
+
+Do not modify backend logic.
+Do not add unnecessary pages.
+Do not replace the whole application.

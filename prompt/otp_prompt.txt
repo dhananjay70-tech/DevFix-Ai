@@ -1,0 +1,178 @@
+Add complete authentication to my existing DevFix AI project.
+
+IMPORTANT:
+Do not rebuild the project.
+Do not modify the AI/FastAPI service.
+Keep the existing Node.js + Express backend architecture.
+
+AUTH METHODS:
+
+1. Email OTP Login
+2. Google OAuth Login
+3. JWT-based session
+4. Logout
+
+EMAIL OTP FLOW:
+
+User enters email
+      ↓
+POST /api/auth/send-otp
+      ↓
+Generate 6-digit OTP
+      ↓
+Store hashed OTP + expiry in database/Redis
+      ↓
+Send OTP to user's email
+      ↓
+User enters OTP
+      ↓
+POST /api/auth/verify-otp
+      ↓
+Verify OTP
+      ↓
+Create/login user
+      ↓
+Return JWT/session
+
+OTP requirements:
+- 6 digit OTP
+- Expire after 5 minutes
+- Maximum 5 verification attempts
+- Resend cooldown of 60 seconds
+- Never store OTP as plain text
+- Invalidate OTP after successful verification
+
+GOOGLE LOGIN:
+
+Add Google OAuth 2.0 using Passport.js or a clean Express OAuth implementation.
+
+Flow:
+
+Login with Google
+      ↓
+Google authorization page
+      ↓
+Google callback
+      ↓
+Find/create user
+      ↓
+Create JWT/session
+      ↓
+Redirect to frontend dashboard
+
+Use environment variables:
+
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GOOGLE_CALLBACK_URL=
+
+EMAIL:
+
+Use SMTP/email provider through environment variables.
+
+EMAIL_HOST=
+EMAIL_PORT=
+EMAIL_USER=
+EMAIL_PASSWORD=
+EMAIL_FROM=
+
+Never hardcode credentials.
+
+DATABASE:
+
+Use the existing PostgreSQL + Prisma setup.
+
+Update the User model to support:
+
+- id
+- name
+- email
+- passwordHash (optional because OTP/Google users may not have password)
+- googleId (optional)
+- avatarUrl
+- authProvider
+- isEmailVerified
+- createdAt
+- updatedAt
+
+Add an OTP model containing:
+
+- id
+- email
+- otpHash
+- expiresAt
+- attempts
+- verified
+- createdAt
+
+API ROUTES:
+
+POST /api/auth/send-otp
+POST /api/auth/verify-otp
+GET  /api/auth/google
+GET  /api/auth/google/callback
+GET  /api/auth/me
+POST /api/auth/logout
+
+JWT:
+
+- Protect private APIs with authentication middleware.
+- Return the authenticated user from /api/auth/me.
+- Use secure HTTP-only cookies for the JWT/session where appropriate.
+- Configure CORS correctly for the React frontend.
+
+FRONTEND:
+
+Add authentication screens to the existing React + Vite app:
+
+Login page:
+- Email input
+- "Send OTP"
+- OTP input after OTP is sent
+- "Verify OTP"
+- "Continue with Google"
+
+OTP screen:
+- 6 separate OTP boxes
+- Resend OTP
+- Countdown timer
+- Error handling
+- Loading state
+
+After successful login:
+→ redirect to /dashboard
+
+Add:
+- Protected routes
+- Logout button
+- User avatar/name in sidebar/header
+- Redirect unauthenticated users to /login
+
+GOOGLE BUTTON:
+Use:
+"Continue with Google"
+
+Clicking it should redirect the browser to:
+GET /api/auth/google
+
+SECURITY:
+- Hash OTP before storing
+- Rate-limit OTP endpoints
+- Prevent OTP brute force
+- Validate email
+- Do not expose secrets
+- Proper CORS configuration
+- Proper error handling
+- Do not reveal whether an email exists
+- Clear/invalidate OTP after successful verification
+
+Keep the existing DevFix AI dashboard and routes unchanged.
+
+After implementation, provide:
+1. Required npm packages
+2. Required .env variables
+3. Prisma migration command
+4. Backend run command
+5. Frontend run command
+6. Google Cloud OAuth setup requirements
+7. SMTP/email setup requirements

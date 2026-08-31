@@ -1,0 +1,48 @@
+Make DevFix AI fully functional, not a mock/demo.
+
+The existing UI is already implemented. Do not redesign the UI unnecessarily.
+
+Implement the complete real GitHub-to-fix workflow:
+
+1. GitHub OAuth connection must use the existing authenticated GitHub account.
+2. Fetch and display the user's real GitHub repositories.
+3. Allow opening a repository and fetching its real open issues from GitHub.
+4. Allow selecting an issue and starting a real investigation.
+5. Clone the selected repository into an isolated Docker sandbox.
+6. Analyze the actual repository files and the selected issue.
+7. Use the configured xAI Grok API for real root-cause analysis and patch generation.
+8. Never return hardcoded/mock repository data, fake issues, fake diffs, fake test results, or fake agent statuses.
+9. Apply the generated patch to the actual cloned repository.
+10. Run the repository's appropriate tests/build commands inside the Docker sandbox.
+11. Show the real test output and real git diff.
+12. If tests pass, create a real Git branch, commit the changes, and create a real GitHub Pull Request through the GitHub API.
+13. Store investigations, agent runs, repositories, issues, pull requests, approvals, and activity logs in the existing Supabase database.
+14. Dashboard statistics must be calculated from real database/GitHub data.
+15. Implement proper loading, error, retry, authentication, token-expiry, GitHub permission, clone, test, Grok API, and PR-creation handling.
+16. Keep GitHub access tokens and API keys strictly on the backend.
+17. Use Docker isolation for all third-party repository code execution.
+18. Preserve the existing LangGraph agent topology and make every agent actually execute its intended task.
+19. Do not claim an investigation/fix succeeded unless the actual code was analyzed and tests were executed successfully.
+20. After implementation, test the entire flow end-to-end and fix all backend/frontend errors you encounter.
+
+First inspect the existing codebase and database schema. Reuse existing routes, controllers, services, agents, and tables where appropriate instead of creating duplicate implementations.
+
+The final working flow must be:
+
+Connect GitHub
+→ Real Repositories
+→ Real Issues
+→ Select Issue
+→ Start Investigation
+→ Clone Real Repo
+→ Analyze Real Code
+→ Grok Root Cause
+→ Generate Real Patch
+→ Apply Patch
+→ Run Real Tests
+→ Show Real Diff
+→ Create Branch
+→ Commit
+→ Create Real GitHub PR
+→ Store result in Supabase
+→ Update Dashboard.

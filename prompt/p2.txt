@@ -1,0 +1,621 @@
+Redesign the existing DevFix AI investigation dashboard into a premium, production-grade AI software debugging and autonomous code repair platform.
+
+IMPORTANT:
+Do NOT make it look like a normal admin dashboard.
+It should visually communicate that this is an AI-powered autonomous debugging system that investigates GitHub issues, understands the repository, identifies root causes, generates fixes, runs tests, performs security analysis, and prepares a pull request.
+
+Keep the existing dark theme and overall brand identity, but significantly improve the information architecture, functionality visibility, interactions, and visual hierarchy.
+
+==================================================
+1. TOP HEADER
+==================================================
+
+Create a professional header containing:
+
+- DevFix AI logo
+- Repository name
+- Issue number
+- Issue title
+- Current investigation status
+- AI confidence score
+- Investigation duration
+- "Live" indicator
+- Refresh button
+- Retry Investigation button
+- Stop Agent button
+- Settings menu
+
+Example:
+
+DevFix AI
+dhananjay70-tech / nearhire-ai-frontend
+Issue #1001
+"Test Suite Failure"
+
+Status: INVESTIGATING
+AI Confidence: 87%
+Duration: 02m 41s
+
+[Retry] [Stop Agent] [Settings]
+
+==================================================
+2. AI INVESTIGATION OVERVIEW
+==================================================
+
+Create a large overview section immediately below the header.
+
+Show:
+
+- Overall progress percentage
+- Current active agent
+- Current operation
+- Estimated remaining steps
+- Number of files scanned
+- Number of errors detected
+- Number of tests executed
+- Number of fixes generated
+
+Example:
+
+AI Investigation
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+67% Complete
+
+Current Agent:
+Root Cause Analyzer
+
+Current Action:
+Analyzing authentication middleware
+
+Files Scanned: 143
+Errors Found: 7
+Tests Executed: 42
+Potential Fixes: 2
+
+==================================================
+3. AGENT PIPELINE
+==================================================
+
+Replace the simple pipeline cards with an interactive AI agent workflow.
+
+Agents:
+
+1. Supervisor
+2. Repository Analyzer
+3. Code Localizer
+4. Root Cause Analyzer
+5. Fix Generator
+6. Test Runner
+7. Security Auditor
+8. Human Review
+9. PR Finalizer
+
+Each agent should have:
+
+- Status
+- Icon
+- Execution time
+- Input
+- Output
+- Confidence
+- Expand/collapse
+- View Logs button
+
+Statuses:
+
+QUEUED
+RUNNING
+COMPLETED
+FAILED
+SKIPPED
+
+Use animated progress for RUNNING.
+
+==================================================
+4. LIVE AGENT TERMINAL
+==================================================
+
+Add a large terminal/log panel.
+
+Display real-time agent activity.
+
+Example:
+
+[17:42:12] Supervisor started
+[17:42:13] Repository cloned
+[17:42:15] Scanning 143 files
+[17:42:18] Found 7 failing tests
+[17:42:21] Localizing potential failure
+[17:42:24] src/api/auth.js identified
+[17:42:28] Root cause candidate detected
+[17:42:31] Generating patch...
+
+Features:
+
+- Auto-scroll
+- Pause logs
+- Clear logs
+- Search logs
+- Copy logs
+- Download logs
+
+==================================================
+5. ROOT CAUSE ANALYSIS
+==================================================
+
+Create a dedicated section showing the AI's reasoning result WITHOUT exposing hidden chain-of-thought.
+
+Show only concise evidence-based explanation.
+
+Example:
+
+ROOT CAUSE DETECTED
+
+API requests are targeting localhost:5001 in production.
+
+Affected File:
+src/config/api.js
+
+Severity:
+HIGH
+
+Confidence:
+94%
+
+Evidence:
+
+❌ Production API URL is not configured
+❌ Browser attempts connection to localhost
+❌ Register API returns ERR_CONNECTION_REFUSED
+
+Recommended Fix:
+
+Use VITE_API_URL environment variable.
+
+[View File]
+[View Diff]
+
+==================================================
+6. ERROR CENTER
+==================================================
+
+Add an "Error Center" that shows ALL detected problems.
+
+Categories:
+
+- Compilation Errors
+- Runtime Errors
+- Test Failures
+- API Errors
+- Database Errors
+- Dependency Errors
+- Configuration Errors
+- Security Issues
+
+Example:
+
+ERROR CENTER
+
+7 Total Issues
+
+🔴 2 Critical
+🟠 3 High
+🟡 2 Medium
+
+Each error should contain:
+
+- Error message
+- File
+- Line number
+- Error type
+- Severity
+- Agent that detected it
+- Status
+- Related test
+
+Allow:
+
+[View Error]
+[Open File]
+[Ask AI]
+[Mark Resolved]
+
+==================================================
+7. TEST RESULTS
+==================================================
+
+Create a professional test execution panel.
+
+Show:
+
+Total Tests: 42
+Passed: 38
+Failed: 4
+Skipped: 0
+
+Progress bar / circular visualization.
+
+Then list every failed test.
+
+Example:
+
+❌ Register API Test
+Expected: 201
+Received: 500
+
+File:
+tests/auth.test.js
+
+Line:
+48
+
+Error:
+ERR_CONNECTION_REFUSED
+
+[View Details]
+
+Also provide:
+
+[Run Tests Again]
+[Run Failed Tests]
+[View Full Report]
+
+==================================================
+8. CODE CHANGE / DIFF VIEWER
+==================================================
+
+Add an actual code diff interface.
+
+Before:
+
+const API_URL = "http://localhost:5001";
+
+After:
+
+const API_URL = import.meta.env.VITE_API_URL;
+
+Show:
+
+Files Changed: 3
+Lines Added: 8
+Lines Removed: 4
+
+Buttons:
+
+[View Full Diff]
+[Accept Fix]
+[Reject Fix]
+[Revert]
+
+Use syntax highlighting.
+
+==================================================
+9. AI FIX GENERATOR
+==================================================
+
+Create a Fix Generator card.
+
+Show:
+
+Fix #1
+Confidence: 94%
+
+Problem:
+Production API URL misconfiguration
+
+Solution:
+Replace hardcoded localhost URL with environment configuration.
+
+Affected Files:
+3
+
+Estimated Risk:
+Low
+
+[Preview Fix]
+[Apply Fix]
+
+==================================================
+10. SECURITY AUDIT
+==================================================
+
+Add a security section.
+
+Display:
+
+Security Score: 92/100
+
+Checks:
+
+✅ Hardcoded secrets
+✅ SQL injection
+✅ XSS
+✅ Dependency vulnerabilities
+⚠️ CORS configuration
+✅ Authentication
+✅ Authorization
+
+Show severity levels.
+
+[Run Security Scan]
+
+==================================================
+11. REPOSITORY EXPLORER
+==================================================
+
+Add a collapsible repository explorer.
+
+Show:
+
+nearhire-ai-frontend
+│
+├── src
+│   ├── components
+│   ├── pages
+│   ├── services
+│   └── utils
+│
+├── tests
+├── package.json
+├── vite.config.js
+└── README.md
+
+Clicking a file should open a code preview.
+
+==================================================
+12. AI ACTIVITY PANEL
+==================================================
+
+Create an AI activity feed.
+
+Example:
+
+🤖 Supervisor
+Repository successfully analyzed
+
+🔍 Code Localizer
+Found 3 suspicious files
+
+🧠 Root Cause Agent
+Identified API configuration issue
+
+🛠 Fix Generator
+Generated patch
+
+🧪 Test Runner
+38/42 tests passed
+
+🛡 Security Agent
+No critical vulnerabilities
+
+==================================================
+13. INVESTIGATION TIMELINE
+==================================================
+
+Create a timeline showing:
+
+10:41:02
+Issue received
+
+10:41:04
+Repository cloned
+
+10:41:17
+Repository analyzed
+
+10:41:42
+Failure localized
+
+10:42:03
+Root cause detected
+
+10:42:35
+Patch generated
+
+10:43:01
+Tests executed
+
+10:43:21
+Security audit completed
+
+==================================================
+14. FINAL VERIFICATION
+==================================================
+
+Create a large "Fix Verification" section.
+
+If successful:
+
+FIX VERIFIED ✅
+
+Tests:
+42 / 42 Passed
+
+Build:
+PASSED
+
+Security:
+PASSED
+
+Root Cause:
+CONFIRMED
+
+Patch:
+APPLIED
+
+AI Confidence:
+96%
+
+Ready for Pull Request
+
+[Create Pull Request]
+
+If failed:
+
+FIX NOT VERIFIED ❌
+
+Tests:
+38 / 42 Passed
+
+Remaining Failures:
+4
+
+[View Remaining Errors]
+[Retry Fix]
+
+==================================================
+15. PR PREVIEW
+==================================================
+
+Before creating PR, show:
+
+Pull Request Preview
+
+Title:
+Fix authentication API configuration
+
+Branch:
+devfix/issue-1001
+
+Files Changed:
+3
+
+Tests:
+42 passed
+
+Description:
+AI-generated summary of the fix.
+
+[Create Pull Request]
+
+==================================================
+16. HUMAN REVIEW
+==================================================
+
+Add an approval section.
+
+Human Review Required
+
+AI recommends:
+APPROVE
+
+Reason:
+All tests passed and security scan completed.
+
+Reviewer actions:
+
+[Approve Fix]
+[Reject]
+[Request Changes]
+
+==================================================
+17. AI CHAT ASSISTANT
+==================================================
+
+Add a floating AI assistant.
+
+The user can ask:
+
+"What caused this issue?"
+"Which files were changed?"
+"Why did the test fail?"
+"Show me the failed tests."
+"Explain this fix."
+"Is this fix safe?"
+"Run the tests again."
+
+The assistant should answer using the current investigation data.
+
+==================================================
+18. ANALYTICS
+==================================================
+
+Add investigation metrics:
+
+Time Saved:
+42 minutes
+
+Files Analyzed:
+143
+
+Errors Detected:
+7
+
+Errors Fixed:
+7
+
+Tests:
+42/42
+
+AI Confidence:
+96%
+
+Investigation Duration:
+3m 21s
+
+==================================================
+19. UI / UX REQUIREMENTS
+==================================================
+
+Make the interface feel like a real AI engineering platform.
+
+Use:
+
+- Premium dark theme
+- Glassmorphism where appropriate
+- Subtle gradients
+- Modern cards
+- Smooth animations
+- Agent status animations
+- Progress indicators
+- Syntax highlighting
+- Expandable panels
+- Tooltips
+- Toast notifications
+- Skeleton loading states
+- Responsive layout
+
+Do NOT overuse cards.
+
+Create clear sections and information hierarchy.
+
+The dashboard should feel similar to a combination of:
+
+AI coding agent
++
+GitHub issue debugger
++
+CI/CD test runner
++
+Security scanner
++
+Pull request automation platform
+
+==================================================
+20. IMPORTANT FUNCTIONALITY
+==================================================
+
+Do not create static-looking UI only.
+
+Where backend functionality already exists, connect the UI to the existing APIs.
+
+The UI should clearly represent:
+
+GitHub Issue
+→ Repository
+→ AI Investigation
+→ Code Analysis
+→ Root Cause
+→ Fix Generation
+→ Patch
+→ Test Execution
+→ Security Audit
+→ Verification
+→ Human Approval
+→ Pull Request
+
+If a backend API is not available for a feature, create a clean mock/service abstraction rather than pretending that the feature is actually connected.
+
+Keep the existing project structure and avoid unnecessary breaking changes.
+
+Make the final result look like a production-ready autonomous software engineering platform, not a generic admin dashboard.

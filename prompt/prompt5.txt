@@ -1,0 +1,365 @@
+You are working on my DevFix AI project. Do NOT just improve the UI or add mock data. Make the actual debugging workflow work end-to-end using the real connected GitHub repository.
+
+CURRENT PROBLEM:
+GitHub OAuth works and repositories are visible, but when I open a repository it only shows:
+- Open Issues (0)
+- Pull Requests (0)
+If the repository has no GitHub Issues, the app effectively has nothing to investigate.
+
+I want DevFix AI to be useful even when there are ZERO GitHub Issues.
+
+GOAL:
+Turn DevFix AI into a real repository error detection and fixing platform.
+
+FIRST:
+Inspect the entire project architecture:
+- Frontend
+- Node/Express Backend
+- ai-backend / LangGraph agents
+- GitHub integration
+- database
+- sandbox
+- investigation flow
+- existing agent APIs
+Do not assume files or APIs exist. Read the actual code first.
+
+IMPLEMENT THESE FEATURES:
+
+1. REPOSITORY CODE SCAN
+On every connected repository page, add a clear primary button:
+
+"Scan Repository"
+
+When clicked:
+- fetch the real repository from GitHub
+- clone/download it into the sandbox
+- inspect the actual source code
+- detect real problems
+- do NOT create fake issues/results
+
+Show scan progress:
+Scanning repository
+→ Analyzing files
+→ Detecting errors
+→ Running tests
+→ Preparing fixes
+
+2. AUTOMATIC ERROR DETECTION
+
+The scanner should detect real problems using appropriate tools based on the repository.
+
+Examples:
+- JavaScript/TypeScript → npm install, npm test, npm run build, eslint if available
+- Python → pytest, syntax/import checks, linting if available
+- Java → Maven/Gradle tests/build if available
+- Other projects → detect their package/build/test configuration
+
+Also inspect source files for:
+- syntax errors
+- compile/build errors
+- failing tests
+- obvious runtime errors
+- broken imports
+- undefined variables/functions
+- dependency problems
+- configuration errors
+- security issues
+
+Do not claim a bug exists just because an LLM thinks it might exist. Prefer evidence from actual execution, compiler/test/linter output.
+
+3. SHOW DETECTED PROBLEMS
+
+Create a proper "Detected Issues" section.
+
+Each issue should contain:
+- severity
+- title
+- file
+- line number if available
+- error message
+- evidence/output
+- explanation
+- confidence
+- status
+
+Example:
+
+HIGH
+Null reference in UserController
+Backend/src/controllers/UserController.js:42
+
+Evidence:
+TypeError: Cannot read properties of undefined
+
+Status: Detected
+
+4. INVESTIGATE BUTTON
+
+Every detected issue should have:
+
+"Investigate"
+
+Clicking it should start the existing real LangGraph investigation workflow.
+
+Use the existing agents rather than creating fake responses:
+- Supervisor
+- Repository Analyzer
+- Code Localizer
+- Root Cause Agent
+- Code Agent / Fix Generator
+- Test Agent
+- Security Agent
+
+Show the agent progress in the UI.
+
+5. ROOT CAUSE
+
+The Root Cause Agent must receive the REAL:
+- issue/error
+- relevant files
+- source code
+- stack trace
+- test output
+
+It should return:
+- root cause
+- affected files
+- explanation
+- proposed solution
+
+Do not allow generic answers disconnected from the repository.
+
+6. FIX GENERATION
+
+The Code/Fix Agent should generate an actual patch against the cloned repository.
+
+Show:
+- files changed
+- before/after diff
+- explanation of changes
+
+Never directly modify the user's production repository.
+
+7. TEST THE FIX
+
+After patch generation:
+- run the relevant tests/build/linter again inside the sandbox
+- compare before/after results
+
+Show:
+
+Before:
+❌ 3 tests failing
+
+After:
+✅ 3 tests passing
+
+If the fix fails:
+- do not mark it as fixed
+- send the failure back to the agent for another investigation/fix attempt
+- limit retries to avoid infinite loops
+
+8. SECURITY REVIEW
+
+Run the existing Security Agent against the generated patch.
+
+Show:
+- security status
+- detected vulnerabilities
+- warnings
+- approval/rejection
+
+9. HUMAN APPROVAL
+
+Keep the existing LangGraph human approval flow.
+
+Before creating a PR, show:
+
+Fix ready for review
+
+Files changed: X
+Tests passed: X
+Security: Passed
+
+Buttons:
+[Approve & Create PR]
+[Reject]
+
+10. CREATE REAL GITHUB PR
+
+Only after approval:
+- create a branch
+- commit the actual patch
+- push branch
+- create a real GitHub Pull Request
+
+Show:
+- branch
+- commit
+- PR number
+- PR URL
+- status
+
+Never create fake PRs.
+
+11. GITHUB ISSUES SHOULD STILL WORK
+
+Keep the existing GitHub Issues functionality.
+
+Repository page should have TWO ways to start:
+
+A) GitHub Issues
+Show actual open GitHub Issues.
+
+B) Repository Scan
+Scan the repository itself even when there are zero GitHub Issues.
+
+If there are no GitHub Issues, display:
+
+"No GitHub issues found."
+"Run a Repository Scan to detect code problems automatically."
+
+12. BETTER SIMPLE UI
+
+Do not redesign the entire application.
+
+Keep the current DevFix AI dark theme.
+
+Make the repository page simple:
+
+Repository
+owner/repository
+
+[Scan Repository]
+
+GitHub Issues     Pull Requests
+
+Detected Issues
+
+┌────────────────────────────────────────────┐
+│ 🔴 HIGH                                    │
+│ TypeError in authController.js             │
+│ authController.js:42                       │
+│                                            │
+│ TypeError: Cannot read properties...       │
+│                                            │
+│ [Investigate]                              │
+└────────────────────────────────────────────┘
+
+If nothing is found:
+
+✅ No problems detected
+
+Tests passed
+Build passed
+Security checks passed
+
+13. ERROR HANDLING
+
+Fix the actual API/backend problems instead of hiding them.
+
+Handle:
+- GitHub API errors
+- repository access errors
+- private repository permissions
+- clone failures
+- sandbox failures
+- npm/pip/maven failures
+- LLM failures
+- timeout
+- malformed LLM responses
+- database errors
+
+Return useful error messages to the frontend.
+
+14. NO MOCKS
+
+VERY IMPORTANT:
+
+Do not use:
+- hardcoded issues
+- fake test results
+- fake GitHub repositories
+- fake diffs
+- fake PR URLs
+- fake agent results
+
+Everything must come from:
+GitHub API
+real repository files
+real test/build/lint execution
+real Gemini LLM calls
+real database
+real sandbox
+
+15. PRESERVE EXISTING WORK
+
+Do not break:
+- GitHub OAuth
+- connected GitHub account
+- repository listing
+- Gemini LLM integration
+- LangGraph workflow
+- human approval
+- database
+- existing dashboard
+- existing PR functionality
+
+Reuse existing services and APIs wherever possible.
+
+16. IMPORTANT DEBUGGING RULE
+
+Before changing code, reproduce the current problem.
+
+Trace the complete flow:
+
+Frontend
+→ Backend API
+→ GitHub API
+→ investigation API
+→ ai-backend
+→ LangGraph
+→ agents
+→ sandbox
+→ result
+→ database
+→ frontend
+
+Find where the current flow stops or returns empty data.
+
+Then fix the root cause.
+
+Do NOT simply add another UI button without implementing the backend workflow.
+
+17. TEST EVERYTHING
+
+After implementation:
+- run frontend
+- run Node backend
+- run ai-backend
+- verify GitHub OAuth
+- verify repository listing
+- verify repository scan
+- verify real error detection
+- verify investigation
+- verify Gemini call
+- verify patch generation
+- verify sandbox tests
+- verify approval
+- verify PR creation
+
+Use one real GitHub repository for an end-to-end test.
+
+At the end give me:
+1. What was broken
+2. Root cause
+3. Files changed
+4. APIs added/changed
+5. How repository scanning works
+6. How detected errors become investigations
+7. How fixes are tested
+8. How PR creation works
+9. Exact commands to run the complete system
+10. Any remaining limitation
+
+Do not stop at analysis. Implement and verify the changes.

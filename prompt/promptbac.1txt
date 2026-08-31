@@ -1,0 +1,148 @@
+Build the backend for my existing DevFix AI project using Node.js + Express.
+
+IMPORTANT:
+Create ONLY the normal core/business backend.
+Do NOT implement LangChain, LangGraph, AI agents, FastAPI, or GitHub OAuth yet.
+
+TECH STACK:
+- Node.js
+- Express.js
+- PostgreSQL
+- Prisma ORM
+- JWT authentication
+- bcrypt
+- dotenv
+- CORS
+- Helmet
+- Morgan
+
+PROJECT STRUCTURE:
+
+backend/
+├── src/
+│   ├── config/
+│   ├── controllers/
+│   ├── middleware/
+│   ├── routes/
+│   ├── services/
+│   ├── utils/
+│   ├── app.js
+│   └── server.js
+├── prisma/
+│   └── schema.prisma
+├── .env.example
+├── package.json
+└── README.md
+
+CREATE THESE MODULES:
+
+1. Authentication
+- Register
+- Login
+- JWT authentication
+- Get current user
+
+2. Users
+- User profile
+- Update profile
+
+3. Repositories
+Create CRUD APIs for repositories.
+Fields:
+- id
+- name
+- fullName
+- owner
+- url
+- language
+- description
+- openIssues
+- createdAt
+- updatedAt
+
+4. Issues
+Create APIs for issues.
+Fields:
+- id
+- repositoryId
+- issueNumber
+- title
+- description
+- status
+- priority
+- labels
+- createdAt
+- updatedAt
+
+5. Agent Runs
+Create database/API structure for future AI runs.
+Fields:
+- id
+- issueId
+- status
+- currentAgent
+- progress
+- confidence
+- rootCause
+- createdAt
+- updatedAt
+
+6. Pull Requests
+Fields:
+- id
+- issueId
+- title
+- url
+- status
+- filesChanged
+- linesAdded
+- linesRemoved
+- createdAt
+
+7. Approvals
+Fields:
+- id
+- agentRunId
+- status
+- reviewerId
+- reviewedAt
+
+8. Activity Logs
+Store important system/agent events.
+
+API ROUTES:
+
+/api/auth
+/api/users
+/api/repositories
+/api/issues
+/api/agent-runs
+/api/pull-requests
+/api/approvals
+/api/activity
+
+REQUIREMENTS:
+- Proper MVC/service architecture
+- Central error handling
+- Request validation
+- Authentication middleware
+- Protected routes where required
+- Environment variables
+- Clean async/await code
+- Consistent JSON responses
+- HTTP status codes
+- No hardcoded secrets
+
+Also create:
+GET /api/health
+
+Return:
+{
+  "status": "ok",
+  "service": "devfix-core"
+}
+
+Use PostgreSQL through Prisma.
+
+Keep the implementation simple and production-ready.
+Do not add unnecessary features.

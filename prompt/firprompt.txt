@@ -1,0 +1,375 @@
+Transform DevFix AI from a mock dashboard into a REAL GitHub-powered autonomous bug-fixing platform.
+
+IMPORTANT:
+Do NOT use mock/hardcoded repositories, issues, agent activity, statistics, fake progress, or fake fixes.
+Every repository, issue, status, investigation, test result, and PR must come from real data.
+
+KEEP:
+- Existing React + Vite UI
+- Existing Node.js backend
+- Existing FastAPI + LangGraph AI backend
+- Existing authentication
+- Existing GitHub OAuth
+
+================================
+1. REAL GITHUB REPOSITORIES
+================================
+
+After GitHub connection:
+
+GET the authenticated user's real GitHub repositories.
+
+Show them in the Repositories page.
+
+Display:
+- repository name
+- owner
+- language
+- private/public
+- stars
+- open issues
+- last updated
+
+Remove all mock repositories.
+
+================================
+2. REAL GITHUB ISSUES
+================================
+
+When user selects a repository:
+
+Fetch REAL open GitHub issues.
+
+Show:
+- issue number
+- title
+- description
+- labels
+- author
+- created date
+- updated date
+
+Do NOT use mock issues.
+
+Add:
+
+[Start Investigation]
+
+================================
+3. REAL INVESTIGATION
+================================
+
+When user clicks "Start Investigation":
+
+Send the real repository + issue to FastAPI/LangGraph.
+
+Workflow:
+
+GitHub Issue
+    ↓
+Supervisor Agent
+    ↓
+Clone repository to isolated workspace
+    ↓
+Analyze repository structure
+    ↓
+Read relevant source files
+    ↓
+Search for error/root cause
+    ↓
+Reproduce bug when possible
+    ↓
+Generate actual code fix
+    ↓
+Apply patch to workspace
+    ↓
+Run repository tests
+    ↓
+If tests fail → analyze failure → fix again
+    ↓
+Security review
+    ↓
+Generate final diff
+    ↓
+Create Git branch
+    ↓
+Commit changes
+    ↓
+Push branch to GitHub
+    ↓
+Create REAL Pull Request
+
+Maximum 3 fix/test iterations.
+
+================================
+4. IMPORTANT: ACTUAL CODE FIXING
+================================
+
+The AI must NOT only explain the bug.
+
+It must actually modify the repository files in the isolated workspace.
+
+Before modification:
+- inspect repository
+- identify relevant files
+- understand existing code
+- determine root cause
+
+After modification:
+- show changed files
+- show git diff
+- run tests
+- report test results
+
+Never claim a fix succeeded if no code was actually changed/tested.
+
+================================
+5. GITHUB BRANCH + PR
+================================
+
+NEVER directly modify main/master.
+
+Create:
+
+devfix/issue-{issueNumber}-{short-description}
+
+Then:
+
+git checkout -b branch
+→ modify files
+→ run tests
+→ git add
+→ git commit
+→ git push
+→ create GitHub Pull Request
+
+PR should contain:
+
+Title:
+Fix #123: <issue title>
+
+Body:
+- Problem
+- Root cause
+- Changes made
+- Tests performed
+- Security review
+- AI confidence
+
+Return the REAL PR URL.
+
+================================
+6. DASHBOARD
+================================
+
+Remove all fake statistics.
+
+Dashboard statistics must come from real backend/database/GitHub data:
+
+- Open Issues
+- Active Investigations
+- Fixes Generated
+- Pull Requests
+- Fix Success Rate
+
+If there is no data, show:
+
+0
+
+Do NOT show fake numbers.
+
+"Active Investigations" must represent actual LangGraph runs.
+
+"Recent Agent Activity" must come from actual agent events.
+
+================================
+7. INVESTIGATION PAGE
+================================
+
+Create a real investigation detail page showing:
+
+Repository
+Issue
+Root Cause
+Affected Files
+Current Agent
+Agent Steps
+Progress
+AI Confidence
+Code Changes
+Git Diff
+Test Results
+Security Results
+PR Status
+PR URL
+
+Example:
+
+Issue #42
+Payment webhook returns 500
+
+Root Cause:
+Missing validation in webhook handler
+
+Affected Files:
+src/webhooks/payment.js
+
+Changes:
++ added idempotency validation
++ added error handling
+
+Tests:
+18 passed
+0 failed
+
+PR:
+https://github.com/...
+
+================================
+8. AGENT STATUS
+================================
+
+Do NOT show agents as "Online" just because the UI exists.
+
+Show real status from FastAPI:
+
+Supervisor
+Repository Analyzer
+Root Cause Agent
+Code Agent
+Test Agent
+Security Agent
+
+Status:
+Idle / Running / Completed / Failed
+
+================================
+9. REAL ERROR HANDLING
+================================
+
+If GitHub API fails:
+show actual GitHub error.
+
+If repository cannot be cloned:
+show actual clone error.
+
+If tests fail:
+show actual test output.
+
+If AI cannot determine root cause:
+mark investigation as FAILED instead of pretending success.
+
+If fix cannot be safely generated:
+require human review.
+
+================================
+10. SECURITY
+================================
+
+Never expose:
+- GitHub access token
+- GitHub client secret
+- LLM API key
+
+Never push directly to main/master.
+
+Use isolated temporary workspaces for repository analysis.
+
+Require human approval before merging.
+
+================================
+11. FINAL REAL FLOW
+================================
+
+Login
+↓
+Connect GitHub
+↓
+Real GitHub repositories
+↓
+Select repository
+↓
+Real GitHub issues
+↓
+Select issue
+↓
+Start Investigation
+↓
+LangGraph analyzes REAL code
+↓
+Find REAL root cause
+↓
+Modify REAL code in workspace
+↓
+Run REAL tests
+↓
+Create REAL branch
+↓
+Push REAL changes
+↓
+Create REAL GitHub PR
+↓
+Show REAL PR URL in DevFix AI
+
+IMPORTANT:
+The application must never fabricate repository names, issues, fixes, test results, PRs, agent activity, confidence scores, or success rates.
+
+If an operation has not actually happened, display its real status instead of simulated success.
+
+
+
+
+
+GitHub
+  ↓
+Issue #17
+  ↓
+DevFix AI
+  ↓
+Clone my-project
+  ↓
+Find login controller
+  ↓
+Find actual bug
+  ↓
+Modify actual file
+  ↓
+Run npm test
+  ↓
+17 passed ✅
+  ↓
+Create branch:
+devfix/issue-17-login-500
+  ↓
+Push code
+  ↓
+Create PR
+
+
+
+
+
+
+
+
+
+             GitHub
+                ↓
+          Node.js Backend
+                ↓
+        Repository / Issues
+                ↓
+          FastAPI Service
+                ↓
+            LangGraph
+                ↓
+      ┌─────────┴─────────┐
+      ↓         ↓         ↓
+   Analyze     Fix       Test
+      └─────────┬─────────┘
+                ↓
+          Git Diff
+                ↓
+          GitHub Branch
+                ↓
+          GitHub Pull Request

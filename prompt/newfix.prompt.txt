@@ -1,0 +1,81 @@
+The GitHub OAuth connection is working, but the DevFix UI currently only shows
+"GitHub Connected" and empty dashboard statistics. The real repository → issue
+→ investigation → fix → test → PR workflow is not clearly exposed.
+
+Improve the existing DevFix application while keeping the UI simple, clean,
+professional, and easy to understand.
+
+IMPORTANT: Do NOT create fake/mock data or fake statuses.
+
+Implement and verify this real flow:
+
+GitHub Connected
+→ Repositories page shows REAL repositories from GitHub
+→ Select repository
+→ Show REAL open GitHub issues
+→ Select an issue
+→ "Investigate Issue" button
+→ Start the REAL LangGraph investigation
+→ Show live agent progress
+→ Show detected root cause
+→ Show affected files
+→ Show proposed code diff
+→ Run REAL tests in the sandbox
+→ Show test results
+→ Human Review / Approve
+→ Create REAL GitHub branch
+→ Commit REAL changes
+→ Push branch
+→ Create REAL GitHub Pull Request
+→ Show PR URL and status.
+
+Add simple navigation:
+- Dashboard
+- Repositories
+- Investigations
+- Pull Requests
+
+Dashboard should show useful REAL statistics only:
+- Open GitHub Issues
+- Running Investigations
+- Successful Fixes
+- Pull Requests
+- Success Rate
+
+Add clear empty states and error states.
+If GitHub/API/LLM/sandbox fails, show the actual reason to the user instead
+of displaying fake success or silently returning empty data.
+
+For each investigation, show:
+- Repository
+- Issue number/title
+- Current agent
+- Progress
+- Root cause
+- Changed files
+- Diff
+- Test result
+- Approval status
+- PR status
+
+Keep the existing design language and make the interface simpler rather than
+adding unnecessary dashboards or animations.
+
+Before changing code, inspect the existing frontend, Node backend, Python
+ai-backend, GitHub OAuth implementation, LangGraph workflow, sandbox service,
+and PR creation code.
+
+Trace every API call end-to-end and fix disconnected/broken integrations.
+Do not rewrite working code unnecessarily.
+
+Most importantly: verify that repository data, issues, investigation results,
+code changes, tests, commits and PRs come from REAL GitHub/API operations.
+Do not claim completion based only on frontend rendering.
+
+At the end report:
+1. Features implemented
+2. APIs/endpoints added or fixed
+3. Files changed
+4. Any required environment variables
+5. Exact remaining blockers
+6. A real end-to-end test result.
