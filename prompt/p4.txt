@@ -1,0 +1,230 @@
+Upgrade the DevFix AI dashboard UI to look like a professional autonomous software engineering / AI debugging platform.
+
+IMPORTANT:
+- Do NOT break any existing functionality.
+- Do NOT use mock/fake data.
+- Use existing backend APIs and real data wherever available.
+- Keep the current dark theme and overall DevFix AI branding.
+- Make the dashboard more information-dense and useful, not just visually decorative.
+- First inspect the existing frontend architecture/components/API services before modifying anything.
+
+Improve the Dashboard with these sections:
+
+1. TOP OVERVIEW
+Keep the existing stats but make them richer:
+- Open Issues
+- Active Investigations
+- Fixes Generated
+- Pull Requests
+- Fix Success Rate
+- Add Tests Passed / Failed
+- Security Issues Found
+
+Each card should show:
+- current count
+- small trend/change indicator
+- useful status information
+
+2. REPOSITORY HEALTH
+Add a Repository Health section showing connected repositories with:
+- repository name
+- language
+- open issues
+- last scanned time
+- health score
+- security status
+- test status
+- "Scan Now" button
+
+3. AI AGENT ACTIVITY
+Replace the mostly empty Active Investigations area with a real-time activity timeline.
+
+Show events such as:
+- Repository scanned
+- Issue detected
+- Root cause analysis started
+- Fix generated
+- Tests running
+- Security review completed
+- Waiting for approval
+- Pull request created
+
+Each event should show:
+- agent name
+- timestamp
+- status
+- short description
+
+Use real investigation/agent data when available.
+
+4. INVESTIGATION PIPELINE
+Create a visual pipeline:
+
+Repository
+  ↓
+Issue Detection
+  ↓
+Code Localization
+  ↓
+Root Cause Analysis
+  ↓
+Fix Generation
+  ↓
+Testing
+  ↓
+Security Review
+  ↓
+Human Approval
+  ↓
+Pull Request
+
+Show each stage as:
+- Completed
+- Running
+- Waiting
+- Failed
+- Not Started
+
+Clicking an investigation should open its detailed view.
+
+5. PROBLEMS / ISSUES
+Add a "Detected Problems" section.
+
+For every detected problem show:
+- severity: Critical / High / Medium / Low
+- file path
+- line number
+- error type
+- short AI explanation
+- detected time
+- "Investigate" button
+- "View Code" button
+
+Allow filtering by severity and status.
+
+6. FIX CENTER
+Add a section showing generated fixes:
+- issue
+- affected file
+- AI confidence
+- tests status
+- security review status
+- approval status
+- PR status
+
+Actions:
+- Review Fix
+- Approve
+- Reject
+- View Diff
+- Open PR
+
+7. SECURITY OVERVIEW
+Add a security card:
+- Critical vulnerabilities
+- High vulnerabilities
+- Medium vulnerabilities
+- Security scans completed
+- Last security scan
+- Security score
+
+8. TESTING OVERVIEW
+Add:
+- tests passed
+- tests failed
+- test coverage if available
+- last test run
+- failing test names
+- "Run Tests" button
+
+9. AI SYSTEM STATUS
+Improve the existing agent status panel.
+
+Show all agents:
+- Supervisor
+- Repository Analyzer
+- Code Localizer
+- Root Cause Agent
+- Code/Fix Agent
+- Test Agent
+- Security Agent
+
+Each should show:
+- Idle / Running / Completed / Failed
+- current task
+- execution time
+- last activity
+
+10. QUICK ACTIONS
+Add a compact Quick Actions panel:
+- New Investigation
+- Scan Repository
+- View Issues
+- Review Fixes
+- View Pull Requests
+- Run Security Scan
+- Run Tests
+
+11. RECENT INVESTIGATIONS
+Show the latest investigations with:
+- repository
+- issue
+- status
+- agents used
+- duration
+- fix status
+- PR status
+
+Click should open the investigation details page.
+
+12. DASHBOARD UX
+Add:
+- loading skeletons
+- empty states
+- proper error states
+- retry buttons
+- refresh button
+- responsive layout
+- tooltips
+- status badges
+- subtle animations only where useful
+
+Make the layout feel similar to a professional developer tool such as GitHub/GitLab + modern AI agent dashboards.
+
+VISUAL DIRECTION:
+- Keep dark developer-focused theme.
+- Use cards with subtle borders.
+- Use clear hierarchy.
+- Avoid huge empty areas.
+- Avoid excessive gradients/glowing effects.
+- Use compact spacing and information-rich components.
+- Use green for success, red for errors, yellow for warnings, blue/purple for AI activity.
+- Use icons consistently.
+- Keep typography clean and professional.
+
+MOST IMPORTANT:
+The dashboard must reflect REAL application state.
+
+Do not invent statistics such as "87% success rate" or fake investigations.
+If an API does not currently provide a required metric:
+1. inspect whether it can be derived from existing data;
+2. if not, add a proper backend endpoint/schema only when necessary;
+3. otherwise show a meaningful "No data yet" state.
+
+Also fix any existing dashboard API errors encountered while implementing this.
+
+After implementation:
+- run the frontend
+- test every dashboard interaction
+- verify API requests
+- verify no console errors
+- verify no broken routes
+- verify existing GitHub connection still works
+- verify repository/issue/investigation pages still work.
+
+Finally provide:
+1. files changed
+2. features added
+3. APIs used/added
+4. any remaining limitations
+5. confirmation that existing functionality was preserved.

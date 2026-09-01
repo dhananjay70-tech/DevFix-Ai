@@ -3,6 +3,8 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import Sidebar from '../components/Sidebar'
 import Header from '../components/Header'
 import { CheckCircleIcon } from '../components/Icons'
+import { AssistantProvider } from '../context/AssistantContext'
+import GlobalAssistantDrawer from '../components/assistant/GlobalAssistantDrawer'
 import * as api from '../services/api'
 
 export default function Layout() {
@@ -58,26 +60,31 @@ export default function Layout() {
   }
 
   return (
-    <div className="app-container">
-      <Sidebar />
+    <AssistantProvider>
+      <div className="app-container">
+        <Sidebar />
 
-      <main className="main-content">
-        <Header
-          githubStatus={githubStatus}
-          onNewInvestigation={() => navigate('/repositories')}
-          onConnectGithub={handleConnectGithub}
-          onDisconnectGithub={handleDisconnectGithub}
-        />
+        <main className="main-content">
+          <Header
+            githubStatus={githubStatus}
+            onNewInvestigation={() => navigate('/repositories')}
+            onConnectGithub={handleConnectGithub}
+            onDisconnectGithub={handleDisconnectGithub}
+          />
 
-        <Outlet context={{ githubStatus, showToast, onConnectGithub: handleConnectGithub }} />
-      </main>
+          <Outlet context={{ githubStatus, showToast, onConnectGithub: handleConnectGithub }} />
+        </main>
 
-      {toastMessage && (
-        <div className="toast-notification">
-          <CheckCircleIcon className="w-4 h-4 text-emerald-400" />
-          <span>{toastMessage}</span>
-        </div>
-      )}
-    </div>
+        <GlobalAssistantDrawer />
+
+        {toastMessage && (
+          <div className="toast-notification">
+            <CheckCircleIcon className="w-4 h-4 text-emerald-400" />
+            <span>{toastMessage}</span>
+          </div>
+        )}
+      </div>
+    </AssistantProvider>
   )
 }
+

@@ -1,5 +1,6 @@
 import React from 'react'
 import { AlertCircleIcon, BotIcon, SparklesIcon, FolderIcon } from '../Icons'
+import ExplainButton from '../assistant/ExplainButton'
 
 export default function RootCauseCard({ investigation, onScrollToDiff, onOpenExplorer }) {
   const rootCause = investigation?.rootCause
@@ -59,8 +60,15 @@ export default function RootCauseCard({ investigation, onScrollToDiff, onOpenExp
             <SparklesIcon className="w-3 h-3" />
             <span>Confidence: {confidence}%</span>
           </span>
+          <ExplainButton
+            title={`Root Cause for #${investigation?.issueNumber}`}
+            data={investigation}
+            type="Root Cause Diagnosis"
+            size="xs"
+          />
         </div>
       </div>
+
 
       {rootCause ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>

@@ -1,0 +1,59 @@
+The DevFix AI backend has this exact error:
+
+GET /api/github/repos 500 after ~10.7 seconds
+
+Stack trace points to:
+Backend/src/controllers/githubController.js:49
+
+Also dashboard shows:
+[DASHBOARD STATS WARN] Falling back to stored repository stats
+
+Failed query:
+select "id", "name", "fullName", "owner", "url", "cloneUrl",
+"language", "description", "openIssues", "userId", "createdAt",
+"updatedAt" from "repositories"
+where ("repositories"."fullName" = $1 and "repositories"."userId" = $2)
+
+params:
+dhananjay70-tech/Women-Safty-System_,
+14ee03da-2f8d-402f-b027-a2877123bac4
+
+Do a complete root-cause investigation.
+
+First inspect githubController.js around line 49 and trace the complete GitHub repository flow:
+Frontend -> /api/github/repos -> auth middleware -> stored GitHub OAuth token -> GitHub API -> response.
+
+Determine the EXACT reason for the 500 error.
+Do not guess and do not mock GitHub repositories.
+
+Check:
+- GitHub OAuth access token retrieval
+- token storage
+- token validity
+- GitHub API request
+- GitHub API response/status
+- required GitHub scopes
+- authenticated-user endpoint
+- repository listing endpoint
+- error handling
+
+Then separately investigate the database warning:
+- repositories schema
+- Drizzle/ORM query
+- PostgreSQL connection
+- userId relation
+- fullName matching
+- whether the query failure is caused by schema mismatch, missing table/column, connection failure, or application logic.
+
+Fix both root causes.
+
+Requirements:
+- Real GitHub repositories must appear in the UI.
+- Do not hardcode repositories.
+- Do not mock responses.
+- Do not expose GitHub tokens/secrets in logs.
+- Preserve the existing OAuth flow.
+- Return useful JSON errors from the backend.
+- Verify /api/github/repos returns HTTP 200 after the fix.
+- Verify /api/dashboard/stats also works.
+- Explain exactly what caused each error and list changed files.

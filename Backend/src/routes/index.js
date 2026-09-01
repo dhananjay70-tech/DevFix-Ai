@@ -13,6 +13,7 @@ import investigationRoutes from './investigationRoutes.js'
 import dashboardRoutes from './dashboardRoutes.js'
 import agentStatusRoutes from './agentStatusRoutes.js'
 import internalRoutes from './internalRoutes.js'
+import assistantRoutes from './assistantRoutes.js'
 
 const router = express.Router()
 
@@ -30,5 +31,8 @@ router.use('/investigations', investigationRoutes)
 router.use('/dashboard', dashboardRoutes)
 router.use('/agents', agentStatusRoutes)
 router.use('/internal', internalRoutes)
+router.use('/ai-assistant', assistantRoutes)
+router.use('/assistant', assistantRoutes)
 
 export default router
+

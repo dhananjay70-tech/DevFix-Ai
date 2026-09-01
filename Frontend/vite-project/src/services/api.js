@@ -49,7 +49,12 @@ export const approveInvestigation = id => request(`/investigations/${id}/approve
 export const rejectInvestigation = id => request(`/investigations/${id}/reject`, { method: 'POST' })
 export const retryInvestigation = id => request(`/investigations/${id}/retry`, { method: 'POST' })
 
-// Pull requests
+// Pull requests & Activity
 export const getPullRequests = () => request('/pull-requests')
+export const getActivityLogs = () => request('/activity')
+export const getRepositories = () => request('/repositories')
+export const getApprovals = () => request('/approvals')
+export const chatWithAssistant = (message, context, history) =>
+  request('/ai-assistant/chat', { method: 'POST', body: JSON.stringify({ message, context, history }) })
 
 export const API_ROOT = API_BASE.replace(/\/api$/, '')

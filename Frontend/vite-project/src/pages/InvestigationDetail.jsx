@@ -17,7 +17,7 @@ import ErrorCenter from '../components/investigation/ErrorCenter'
 import InvestigationAnalytics from '../components/investigation/InvestigationAnalytics'
 import AiActivityTimeline from '../components/investigation/AiActivityTimeline'
 import RepoExplorerModal from '../components/investigation/RepoExplorerModal'
-import AiChatAssistant from '../components/investigation/AiChatAssistant'
+import { useAssistant } from '../context/AssistantContext'
 
 const ACTIVE_STATUSES = ['PENDING', 'RUNNING']
 
@@ -25,6 +25,7 @@ export default function InvestigationDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { showToast } = useOutletContext()
+  const { setPageContext } = useAssistant()
   const [investigation, setInvestigation] = useState(null)
   const [error, setError] = useState(null)
   const [actionLoading, setActionLoading] = useState(false)
@@ -32,9 +33,20 @@ export default function InvestigationDetail() {
 
   const load = useCallback(() => {
     api.getInvestigation(id)
-      .then(res => setInvestigation(res.data))
+      .then(res => {
+        setInvestigation(res.data)
+        if (res.data) {
+          setPageContext({
+            page: 'investigation',
+            investigationId: id,
+            repository: res.data.repositoryFullName,
+            investigation: res.data
+          })
+        }
+      })
       .catch(err => setError(err.message))
-  }, [id])
+  }, [id, setPageContext])
+
 
   useEffect(() => {
     load()
@@ -192,9 +204,7 @@ export default function InvestigationDetail() {
         repositoryFullName={investigation.repositoryFullName}
         affectedFiles={investigation.affectedFiles || []}
       />
-
-      {/* 15. Floating AI Chat Assistant */}
-      <AiChatAssistant investigation={investigation} />
     </div>
   )
 }
+

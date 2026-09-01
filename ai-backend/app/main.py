@@ -182,6 +182,10 @@ async def reject_run(run_id: str, req: Optional[ApprovalRequest] = None):
     return _to_run_response(run_id, state)
 
 
+from app.models.requests import RunWorkflowRequest, ApprovalRequest, ScanRepositoryRequest, AssistantChatRequest
+from app.services.assistant_service import assistant_service
+
+
 @app.post("/api/ai/scan", response_model=ScanRepositoryResponse)
 async def scan_repository(req: ScanRepositoryRequest):
     """Clones the repository in sandbox, executes tests/builds, scans source code,
@@ -194,3 +198,15 @@ async def scan_repository(req: ScanRepositoryRequest):
         github_token=req.github_token
     )
     return res
+
+
+@app.post("/api/ai/assistant/chat")
+async def assistant_chat(req: AssistantChatRequest):
+    """Context-aware AI assistant endpoint answering questions about repositories,
+    investigations, pull requests, dashboard metrics, and code fixes."""
+    return await assistant_service.chat(
+        message=req.message,
+        context=req.context or {},
+        history=req.history or []
+    )
+

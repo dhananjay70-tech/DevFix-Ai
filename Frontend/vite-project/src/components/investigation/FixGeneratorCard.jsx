@@ -1,5 +1,6 @@
 import React from 'react'
 import { SparklesIcon, CheckCircleIcon, GitBranchIcon } from '../Icons'
+import ExplainButton from '../assistant/ExplainButton'
 
 export default function FixGeneratorCard({ investigation, onScrollToDiff }) {
   const confidence = investigation?.confidence
@@ -59,8 +60,15 @@ export default function FixGeneratorCard({ investigation, onScrollToDiff }) {
             <SparklesIcon className="w-3 h-3" />
             <span>Confidence: {confidence}%</span>
           </span>
+          <ExplainButton
+            title={`Proposed Patch for #${investigation?.issueNumber}`}
+            data={investigation}
+            type="AI Code Patch"
+            size="xs"
+          />
         </div>
       </div>
+
 
       <div style={{
         backgroundColor: 'var(--bg-elevated)',

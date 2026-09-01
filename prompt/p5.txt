@@ -1,0 +1,516 @@
+You are a senior full-stack engineer and AI product architect.
+
+I have an existing project called "DevFix AI" — an AI-powered software engineering platform that analyzes GitHub repositories, investigates bugs, performs root-cause analysis, generates code fixes/patches, runs tests in a sandbox, and uses LangGraph-based AI agents.
+
+I want you to upgrade the existing application by adding a GLOBAL, CONTEXT-AWARE AI ASSISTANT across the entire application.
+
+IMPORTANT:
+- First inspect the existing codebase and understand the current architecture.
+- Do NOT rewrite the application from scratch.
+- Do NOT remove or break existing features.
+- Reuse existing APIs, components, agents, database models, authentication, GitHub integration, and LangGraph workflows wherever possible.
+- Follow the existing project structure, naming conventions, UI style, and coding patterns.
+- Before implementing, identify where the current AI agents, API routes, frontend layout, and state management are located.
+
+==================================================
+1. GLOBAL AI ASSISTANT
+==================================================
+
+Add a floating "🤖 Ask AI Assistant" button available on every major page:
+
+- Dashboard
+- Repositories
+- Repository Details
+- Investigations
+- Investigation Details
+- Pull Requests
+- Pull Request Details
+- Settings
+
+Clicking the button should open a modern right-side AI chat drawer/panel.
+
+Do NOT navigate the user to another page.
+
+The assistant should remain available while navigating through the application.
+
+==================================================
+2. AI ASSISTANT UI
+==================================================
+
+Create a polished developer-focused AI assistant UI matching the existing DevFix AI dark theme.
+
+Panel structure:
+
+Header:
+- DevFix AI Assistant
+- Online/Agent status
+- Close button
+
+Context section:
+- Current page
+- Current repository
+- Current investigation
+- Current pull request
+- Relevant issue/error if available
+
+Chat area:
+- User messages
+- AI messages
+- Streaming response if supported
+- Loading/thinking state
+- Agent/tool activity indicator
+- Error state
+
+Input:
+- Text input
+- Send button
+- Enter to send
+- Multiline support
+- Disable send while request is processing
+
+Suggested prompts should change depending on the current page.
+
+==================================================
+3. CONTEXT AWARENESS
+==================================================
+
+The assistant must understand the current application context.
+
+Example context:
+
+{
+  page: "investigation",
+  repository: "backend",
+  investigationId: "123",
+  pullRequestId: null,
+  issueId: "456"
+}
+
+Pass only relevant context to the backend.
+
+The assistant should NOT require the user to repeatedly explain what repository or investigation they are talking about.
+
+==================================================
+4. DASHBOARD CONTEXT
+==================================================
+
+Suggested prompts:
+
+- What needs my attention?
+- Why did my repository health change?
+- Show high-risk repositories
+- Summarize recent activity
+- What should I fix first?
+
+The assistant should use existing dashboard/repository data where available.
+
+Example response:
+
+"Your repository health dropped from 87 to 72.
+
+Main reasons:
+• 3 high-severity issues
+• 1 failing test suite
+• 2 unresolved PR findings
+
+Recommended action:
+Review authController.js."
+
+==================================================
+5. REPOSITORY CONTEXT
+==================================================
+
+When viewing a repository, provide:
+
+- Repository name
+- Branch
+- Recent commits
+- Health score
+- Open issues
+- Test results
+- Security findings
+- Code quality information
+
+Suggested prompts:
+
+- Analyze this repository
+- Find risky files
+- Explain recent failures
+- Check security issues
+- What should I fix first?
+- Summarize this repository
+
+Possible actions:
+
+[Investigate]
+[View Code]
+[Generate Fix]
+
+==================================================
+6. INVESTIGATION CONTEXT
+==================================================
+
+For investigation pages, the assistant should understand:
+
+- Investigation ID
+- Error
+- Root cause
+- Severity
+- Confidence
+- Affected files
+- Generated fix
+- Test results
+
+Suggested prompts:
+
+- Explain this investigation
+- What caused this bug?
+- Why did the test fail?
+- Generate a fix
+- Explain the root cause
+- Is this fix safe?
+
+The assistant should integrate with the existing LangGraph Root Cause Agent and Fix Generator Agent instead of creating duplicate logic.
+
+==================================================
+7. PULL REQUEST CONTEXT
+==================================================
+
+When viewing a PR, provide:
+
+- PR number
+- Title
+- Author
+- Changed files
+- Diff information
+- Tests
+- Existing findings
+- Risk score
+
+Suggested prompts:
+
+- Review this PR
+- Find potential bugs
+- Check security
+- Explain the changes
+- What could break?
+- Generate fixes
+
+Example:
+
+PR #142
+
+Risk: HIGH
+
+Changed:
+• 8 files
+• 243 lines
+• 17 functions
+
+Potential Issues:
+• Missing error handling
+• Null reference possibility
+• Security concern
+
+Tests:
+✓ 17 passed
+✗ 2 failed
+
+==================================================
+8. "EXPLAIN THIS" AI ACTION
+==================================================
+
+Add small AI/✨ buttons beside important information.
+
+Examples:
+
+Repository Health 72/100    [✨ Explain]
+
+Root Cause Analysis         [✨ Explain]
+
+AI Fix                      [✨ Explain]
+
+Test Results                [✨ Explain]
+
+PR Risk                     [✨ Explain]
+
+When clicked, the assistant should explain that specific item using the available application data.
+
+Example:
+
+"Your repository health is 72/100 because test reliability decreased by 12%, code complexity increased, and 3 high-severity issues were detected."
+
+==================================================
+9. AI AGENT ARCHITECTURE
+==================================================
+
+Reuse the existing LangGraph architecture.
+
+Create an assistant orchestration layer if necessary:
+
+AI Assistant
+      |
+      v
+Intent Detection
+      |
+      +------------------+
+      |        |         |
+      v        v         v
+Repository  Investigation  PR
+Agent       Agent          Agent
+      |        |         |
+      +--------+----------+
+               |
+               v
+          Tool Executor
+               |
+       +-------+--------+
+       |       |        |
+       v       v        v
+    GitHub   Database  Sandbox
+       |
+       v
+   AI Response
+
+Possible intents:
+
+- repository_analysis
+- bug_explanation
+- root_cause_analysis
+- pr_review
+- test_failure
+- security_analysis
+- code_quality
+- fix_generation
+- repository_summary
+- general_devfix_question
+
+==================================================
+10. TOOL-BASED ASSISTANT
+==================================================
+
+The assistant should eventually be able to use existing backend capabilities/tools such as:
+
+- getRepository
+- getRepositoryStats
+- getFiles
+- getFileContent
+- getPullRequest
+- getPullRequestDiff
+- getInvestigation
+- getRootCause
+- getTestResults
+- analyzeRepository
+- runTests
+- generateFix
+- createInvestigation
+
+Do NOT expose dangerous tools directly to the user.
+
+For operations that modify code, require explicit confirmation.
+
+For example:
+
+User:
+"Generate a fix."
+
+AI:
+"I found a possible fix for authController.js."
+
+[Review Fix]
+
+After review:
+
+[Apply Fix]
+
+Never automatically modify the repository without confirmation.
+
+==================================================
+11. CHAT API
+==================================================
+
+Create or extend a backend API such as:
+
+POST /api/ai-assistant/chat
+
+Request:
+
+{
+  "message": "Why did this test fail?",
+  "context": {
+    "page": "investigation",
+    "repositoryId": "...",
+    "investigationId": "...",
+    "pullRequestId": "..."
+  }
+}
+
+Response should contain:
+
+- answer
+- sources/context used
+- agent used
+- suggested actions
+- optional tool activity
+
+If the project already has an AI chat endpoint, reuse and extend it instead of creating a duplicate endpoint.
+
+==================================================
+12. AGENT ACTIVITY UI
+==================================================
+
+When the assistant is working, show meaningful activity.
+
+Example:
+
+🤖 DevFix AI
+
+Analyzing request...
+
+✓ Reading investigation
+✓ Checking repository
+⟳ Running root-cause agent
+○ Checking test results
+
+Then show:
+
+"Root cause identified."
+
+Do not expose raw chain-of-thought or hidden reasoning.
+
+Only show safe high-level tool/activity status.
+
+==================================================
+13. MEMORY / CONVERSATION
+==================================================
+
+Maintain conversation history while the assistant drawer is open.
+
+If the existing application has a database/user system, optionally persist assistant conversations per user.
+
+Users should be able to:
+
+- Start new chat
+- Clear chat
+- Continue previous context
+
+Do not store sensitive information unnecessarily.
+
+==================================================
+14. RESPONSIVE DESIGN
+==================================================
+
+Desktop:
+- Right-side drawer around 380–450px.
+
+Tablet:
+- Slightly smaller drawer.
+
+Mobile:
+- Full-screen assistant.
+
+The assistant must not cover important application controls.
+
+==================================================
+15. UI QUALITY
+==================================================
+
+The current DevFix AI design is dark, modern, developer-focused.
+
+Maintain the existing visual language:
+
+- dark background
+- purple/blue AI accents
+- cards
+- subtle borders
+- rounded corners
+- clear typography
+- smooth transitions
+
+Add polished animations:
+
+- assistant button hover
+- drawer slide-in
+- message appearance
+- AI thinking indicator
+- tool execution status
+- button hover states
+
+Avoid excessive animations.
+
+==================================================
+16. IMPORTANT ENGINEERING REQUIREMENTS
+==================================================
+
+Before coding:
+
+1. Inspect the frontend architecture.
+2. Inspect backend architecture.
+3. Find existing AI/LangGraph agents.
+4. Find GitHub API integration.
+5. Find existing investigation APIs.
+6. Find existing PR APIs.
+7. Find existing test/sandbox functionality.
+8. Find authentication and user context.
+9. Identify reusable components.
+10. Identify existing global layout/provider.
+
+Then implement the assistant using the existing architecture.
+
+Do not duplicate functionality.
+
+Do not create fake data.
+
+Do not hardcode repository information.
+
+Do not break existing pages.
+
+Handle:
+- loading
+- errors
+- empty states
+- API failures
+- agent failures
+- timeout
+- authentication
+- missing context
+
+==================================================
+17. FINAL PRODUCT GOAL
+==================================================
+
+The final experience should feel like:
+
+"DevFix AI is an AI Software Engineer integrated into the entire development workflow."
+
+NOT:
+
+"DevFix AI has a chatbot."
+
+The assistant should help users:
+
+Understand → Investigate → Explain → Fix → Test → Review
+
+across the complete DevFix AI platform.
+
+After implementation, run the application and verify:
+
+- Assistant appears globally.
+- Dashboard context works.
+- Repository context works.
+- Investigation context works.
+- PR context works.
+- Explain buttons work.
+- Existing LangGraph agents are reused.
+- Existing features still work.
+- No console errors.
+- No broken API calls.
+- Responsive UI works.
+
+Finally, provide a concise summary of:
+1. Files changed
+2. Components added
+3. APIs added/modified
+4. Agents/tools integrated
+5. How to test the assistant
+6. Any environment variables required

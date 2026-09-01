@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, text, integer, timestamp, jsonb, boolean } from 'drizzle-orm/pg-core'
+import { pgTable, uuid, varchar, text, integer, timestamp, jsonb, boolean, uniqueIndex } from 'drizzle-orm/pg-core'
 
 export const users = pgTable('users', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -42,7 +42,9 @@ export const repositories = pgTable('repositories', {
   userId: uuid('userId').references(() => users.id, { onDelete: 'set null' }),
   createdAt: timestamp('createdAt').defaultNow().notNull(),
   updatedAt: timestamp('updatedAt').defaultNow().notNull()
-})
+}, (table) => [
+  uniqueIndex('repositories_user_fullname_idx').on(table.userId, table.fullName)
+])
 
 export const issues = pgTable('issues', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -55,7 +57,9 @@ export const issues = pgTable('issues', {
   labels: jsonb('labels').default([]),
   createdAt: timestamp('createdAt').defaultNow().notNull(),
   updatedAt: timestamp('updatedAt').defaultNow().notNull()
-})
+}, (table) => [
+  uniqueIndex('issues_repo_number_idx').on(table.repositoryId, table.issueNumber)
+])
 
 export const agentRuns = pgTable('agent_runs', {
   id: uuid('id').defaultRandom().primaryKey(),

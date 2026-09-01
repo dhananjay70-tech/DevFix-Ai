@@ -28,3 +28,10 @@ class ApprovalRequest(BaseModel):
 class ScanRepositoryRequest(BaseModel):
     repository: RepositoryPayload
     github_token: str = Field(..., description="User's GitHub OAuth access token")
+
+
+class AssistantChatRequest(BaseModel):
+    message: str
+    context: Optional[dict] = Field(default_factory=dict)
+    history: Optional[list] = Field(default_factory=list)
+

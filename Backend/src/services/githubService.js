@@ -100,8 +100,8 @@ const mapRepository = (repo) => ({
   id: repo.id,
   name: repo.name,
   fullName: repo.full_name,
-  owner: repo.owner.login,
-  ownerAvatar: repo.owner.avatar_url,
+  owner: repo.owner?.login || '',
+  ownerAvatar: repo.owner?.avatar_url || '',
   language: repo.language || 'Plain Text',
   stars: repo.stargazers_count,
   openIssues: repo.open_issues_count,
@@ -112,6 +112,123 @@ const mapRepository = (repo) => ({
   defaultBranch: repo.default_branch,
   description: repo.description
 })
+
+export const upsertRepositoriesBatch = async (userId, githubRepos) => {
+  if (!githubRepos || githubRepos.length === 0) return []
+
+  const mappedList = githubRepos.map(mapRepository)
+
+  // 1. Fetch all existing repositories for this user in a single query
+  const existingRows = await db.select()
+    .from(repositories)
+    .where(eq(repositories.userId, userId))
+
+  const existingMap = new Map(existingRows.map(r => [r.fullName, r]))
+  const toInsert = []
+  const toUpdate = []
+
+  for (const mapped of mappedList) {
+    const existing = existingMap.get(mapped.fullName)
+    const values = {
+      name: mapped.name,
+      fullName: mapped.fullName,
+      owner: mapped.owner,
+      url: mapped.url,
+      cloneUrl: mapped.cloneUrl,
+      language: mapped.language,
+      description: mapped.description,
+      openIssues: mapped.openIssues || 0,
+      userId,
+      updatedAt: new Date()
+    }
+
+    if (!existing) {
+      toInsert.push(values)
+    } else {
+      const hasChanged =
+        existing.openIssues !== values.openIssues ||
+        existing.language !== values.language ||
+        existing.description !== values.description ||
+        existing.url !== values.url ||
+        existing.cloneUrl !== values.cloneUrl
+
+      if (hasChanged) {
+        toUpdate.push({ id: existing.id, values })
+      }
+    }
+  }
+
+  // 2. Batch insert new repositories in chunks
+  if (toInsert.length > 0) {
+    for (let i = 0; i < toInsert.length; i += 50) {
+      const chunk = toInsert.slice(i, i + 50)
+      await db.insert(repositories).values(chunk).onConflictDoNothing()
+    }
+  }
+
+  // 3. Batch update changed repositories in parallel with controlled concurrency
+  if (toUpdate.length > 0) {
+    for (let i = 0; i < toUpdate.length; i += 10) {
+      const chunk = toUpdate.slice(i, i + 10)
+      await Promise.all(
+        chunk.map(item => db.update(repositories).set(item.values).where(eq(repositories.id, item.id)))
+      )
+    }
+  }
+
+  return mappedList
+}
+
+export const upsertIssuesBatch = async (repositoryId, rawIssues) => {
+  if (!rawIssues || rawIssues.length === 0) return
+
+  const existingIssues = await db.select()
+    .from(issues)
+    .where(eq(issues.repositoryId, repositoryId))
+
+  const existingMap = new Map(existingIssues.map(i => [i.issueNumber, i]))
+  const toInsert = []
+  const toUpdate = []
+
+  for (const issue of rawIssues) {
+    const labels = Array.isArray(issue.labels) ? issue.labels.map(label => label.name || label) : []
+    const values = {
+      title: issue.title,
+      description: issue.body || '',
+      status: issue.state?.toUpperCase() || 'OPEN',
+      labels,
+      updatedAt: new Date()
+    }
+
+    const existing = existingMap.get(issue.number)
+    if (!existing) {
+      toInsert.push({
+        repositoryId,
+        issueNumber: issue.number,
+        priority: 'MEDIUM',
+        ...values
+      })
+    } else {
+      toUpdate.push({ id: existing.id, values })
+    }
+  }
+
+  if (toInsert.length > 0) {
+    for (let i = 0; i < toInsert.length; i += 50) {
+      const chunk = toInsert.slice(i, i + 50)
+      await db.insert(issues).values(chunk).onConflictDoNothing()
+    }
+  }
+
+  if (toUpdate.length > 0) {
+    for (let i = 0; i < toUpdate.length; i += 10) {
+      const chunk = toUpdate.slice(i, i + 10)
+      await Promise.all(
+        chunk.map(item => db.update(issues).set(item.values).where(eq(issues.id, item.id)))
+      )
+    }
+  }
+}
 
 const upsertRepository = async (userId, repo) => {
   const mapped = mapRepository(repo)
@@ -134,7 +251,7 @@ const upsertRepository = async (userId, repo) => {
   if (existing) {
     await db.update(repositories).set(values).where(eq(repositories.id, existing.id))
   } else {
-    await db.insert(repositories).values(values)
+    await db.insert(repositories).values(values).onConflictDoNothing()
   }
 
   return mapped
@@ -163,7 +280,7 @@ const upsertIssue = async (repositoryId, issue) => {
     issueNumber: issue.number,
     priority: 'MEDIUM',
     ...values
-  }).returning()
+  }).onConflictDoNothing().returning()
 
   return created
 }
@@ -314,11 +431,13 @@ export const getUserRepositories = async (userId) => {
 
   while (url && repos.length < 1000) {
     const { data, headers } = await fetchGithubJson(url, token, 'Failed to fetch repositories from GitHub')
-    repos.push(...data)
+    if (Array.isArray(data)) {
+      repos.push(...data)
+    }
     url = parseNextLink(headers.get('link'))
   }
 
-  return Promise.all(repos.map(repo => upsertRepository(userId, repo)))
+  return upsertRepositoriesBatch(userId, repos)
 }
 
 export const getRepositoryMetadata = async (userId, owner, repo) => {
@@ -365,13 +484,15 @@ export const getRepositoryIssues = async (userId, owner, repo) => {
   const rawIssues = []
   while (url && rawIssues.length < 1000) {
     const { data, headers } = await fetchGithubJson(url, token, 'Failed to fetch issues from GitHub')
-    rawIssues.push(...data)
+    if (Array.isArray(data)) {
+      rawIssues.push(...data)
+    }
     url = parseNextLink(headers.get('link'))
   }
 
   const cleanIssues = rawIssues.filter(item => !item.pull_request)
   if (repoRow) {
-    await Promise.all(cleanIssues.map(issue => upsertIssue(repoRow.id, issue)))
+    await upsertIssuesBatch(repoRow.id, cleanIssues)
   }
 
   return cleanIssues.map(issue => ({
