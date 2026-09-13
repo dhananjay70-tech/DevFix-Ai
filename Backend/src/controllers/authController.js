@@ -77,7 +77,7 @@ export const googleAuthRedirect = asyncHandler(async (req, res) => {
 
 export const googleAuthCallback = asyncHandler(async (req, res) => {
   const { code } = req.query
-  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173'
+  const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5174').split(',')[0].trim()
 
   if (!code) {
     return res.redirect(`${frontendUrl}/login?error=no_code`)

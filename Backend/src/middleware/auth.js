@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken'
 import { db } from '../config/drizzle.js'
 import { users } from '../db/schema.js'
 import { eq } from 'drizzle-orm'
+import { getJwtSecret } from '../utils/jwt.js'
 
 export const protect = async (req, res, next) => {
   let token
@@ -14,7 +15,7 @@ export const protect = async (req, res, next) => {
 
   if (token) {
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'devfix_jwt_secret_key_change_in_production')
+      const decoded = jwt.verify(token, getJwtSecret())
 
       const [user] = await db
         .select({

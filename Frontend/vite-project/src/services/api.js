@@ -1,7 +1,13 @@
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+const rawApiUrl = (import.meta.env.VITE_API_URL || 'http://localhost:5000').trim().replace(/\/+$/, '')
+const API_BASE = rawApiUrl.endsWith('/api') ? rawApiUrl : `${rawApiUrl}/api`
+export const API_ROOT = API_BASE.replace(/\/api$/, '')
 
 async function request(path, options = {}) {
-  const res = await fetch(`${API_BASE}${path}`, {
+  const cleanPath = path.startsWith('/') ? path : `/${path}`
+  const finalPath = cleanPath.startsWith('/api/') ? cleanPath.slice(4) : cleanPath
+  const url = `${API_BASE}${finalPath}`
+
+  const res = await fetch(url, {
     credentials: 'include',
     headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
     ...options
@@ -56,5 +62,3 @@ export const getRepositories = () => request('/repositories')
 export const getApprovals = () => request('/approvals')
 export const chatWithAssistant = (message, context, history) =>
   request('/ai-assistant/chat', { method: 'POST', body: JSON.stringify({ message, context, history }) })
-
-export const API_ROOT = API_BASE.replace(/\/api$/, '')

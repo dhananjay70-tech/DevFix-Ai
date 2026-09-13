@@ -1,3 +1,4 @@
+import 'dotenv/config'
 import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
@@ -13,10 +14,36 @@ app.use(helmet({
   contentSecurityPolicy: false // Allow cross-origin redirections for OAuth
 }))
 
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-  credentials: true
-}))
+const defaultOrigins = [
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:5174'
+]
+
+const envOrigins = [
+  ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : []),
+  ...(process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',') : [])
+].map(origin => origin.trim()).filter(Boolean)
+
+const allowedOrigins = Array.from(new Set([...defaultOrigins, ...envOrigins]))
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Allow requests with no origin (e.g. mobile apps, curl, server-to-server)
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true)
+    }
+    return callback(new Error(`CORS blocked for origin: ${origin}`))
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  optionsSuccessStatus: 204
+}
+
+app.use(cors(corsOptions))
+app.options('*', cors(corsOptions))
 
 app.use(cookieParser())
 app.use(express.json())
