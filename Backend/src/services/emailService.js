@@ -21,14 +21,18 @@ const getTransporter = () => {
 
   if (!transporter) {
     transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : 465,
-      secure: process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) === 465 : true,
-      family: 4, // Force IPv4 to prevent ENETUNREACH errors on cloud container networks (e.g. Render)
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false,
+      requireTLS: true,
+      family: 4, // Force IPv4 to prevent ENETUNREACH on IPv6-unreachable cloud container networks (e.g. Render)
       auth: {
         user: gmailUser,
         pass: gmailAppPassword
-      }
+      },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000
     })
   }
 
