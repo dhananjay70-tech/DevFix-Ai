@@ -1,9 +1,7 @@
 import 'dotenv/config'
 import nodemailer from 'nodemailer'
 
-let transporter = null
-
-const getTransporter = () => {
+const getEmailCredentials = () => {
   const gmailUser = process.env.GMAIL_USER || process.env.SMTP_USER
   const gmailAppPassword = process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS || process.env.SMTP_PASSWORD
 
@@ -19,24 +17,26 @@ const getTransporter = () => {
     throw configErr
   }
 
-  if (!transporter) {
-    transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 587,
-      secure: false,
-      requireTLS: true,
-      family: 4, // Force IPv4 to prevent ENETUNREACH on IPv6-unreachable cloud container networks (e.g. Render)
-      auth: {
-        user: gmailUser,
-        pass: gmailAppPassword
-      },
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
-      socketTimeout: 15000
-    })
-  }
+  return { gmailUser, gmailAppPassword }
+}
 
-  return transporter
+const createTransporter = (port = 465, secure = true) => {
+  const { gmailUser, gmailAppPassword } = getEmailCredentials()
+
+  return nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port,
+    secure,
+    ...(port === 587 ? { requireTLS: true } : {}),
+    family: 4, // Force IPv4 to prevent ENETUNREACH on cloud environments (Render)
+    auth: {
+      user: gmailUser,
+      pass: gmailAppPassword
+    },
+    connectionTimeout: 8000,
+    greetingTimeout: 8000,
+    socketTimeout: 10000
+  })
 }
 
 const SEND_TIMEOUT_MS = 10000
@@ -59,12 +59,12 @@ const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 
 /**
  * Sends OTP email via Gmail SMTP (nodemailer).
- * Implements exponential backoff retry (2 retries) and IPv4 enforcement for resilient delivery.
+ * Uses direct SSL port 465 with forced IPv4, retries with exponential backoff,
+ * and falls back to port 587 if needed.
  */
 export const sendOtpEmail = async (toEmail, otpCode) => {
-  const gmailUser = process.env.GMAIL_USER || process.env.SMTP_USER
+  const { gmailUser } = getEmailCredentials()
   const senderName = process.env.GMAIL_SENDER_NAME || process.env.SMTP_FROM_NAME || 'DevFix AI'
-  const mailer = getTransporter()
 
   const htmlContent = `
     <div style="font-family: Arial, sans-serif; background-color: #090a0f; color: #f3f4f6; padding: 30px; border-radius: 8px; max-width: 500px; margin: 0 auto;">
@@ -88,18 +88,30 @@ export const sendOtpEmail = async (toEmail, otpCode) => {
     html: htmlContent
   }
 
-  const maxRetries = 2
-  const maxAttempts = maxRetries + 1
-  const retryDelays = [1500, 3000]
+  // Attempt configurations: primary port 465 (SSL), retry on 465, fallback to 587 (STARTTLS)
+  const attemptsConfig = [
+    { port: 465, secure: true, delay: 0 },
+    { port: 465, secure: true, delay: 1500 },
+    { port: 587, secure: false, delay: 2500 }
+  ]
 
   let lastError = null
 
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    try {
-      console.log(`[SMTP DISPATCH] Attempt ${attempt}/${maxAttempts}: Dispatching OTP email to ${toEmail} via Gmail SMTP...`)
+  for (let i = 0; i < attemptsConfig.length; i++) {
+    const attempt = i + 1
+    const { port, secure, delay } = attemptsConfig[i]
 
+    if (delay > 0) {
+      console.log(`[SMTP RETRY] Waiting ${delay}ms before attempt ${attempt}...`)
+      await sleep(delay)
+    }
+
+    try {
+      console.log(`[SMTP DISPATCH] Attempt ${attempt}/${attemptsConfig.length}: Dispatching OTP email to ${toEmail} via Gmail SMTP (port ${port}, IPv4)...`)
+
+      const mailer = createTransporter(port, secure)
       const info = await sendMailWithTimeout(mailer, mailOptions, SEND_TIMEOUT_MS)
-      console.log(`[SMTP SEND SUCCESS] Email accepted for ${toEmail} on attempt ${attempt}. MessageId: ${info.messageId}`)
+      console.log(`[SMTP SEND SUCCESS] Email accepted for ${toEmail} on attempt ${attempt} (port ${port}). MessageId: ${info.messageId}`)
       return info.messageId
     } catch (err) {
       lastError = err
@@ -119,21 +131,14 @@ export const sendOtpEmail = async (toEmail, otpCode) => {
         err.message?.includes('Connection timeout')
 
       if (isNetworkError) {
-        console.error(`[SMTP NETWORK ERROR] Attempt ${attempt}/${maxAttempts} failed: ${err.code || 'TIMEOUT'} - ${err.message}`)
+        console.error(`[SMTP NETWORK ERROR] Attempt ${attempt}/${attemptsConfig.length} (port ${port}) failed: ${err.code || 'TIMEOUT'} - ${err.message}`)
       } else {
-        console.error(`[SMTP SEND ERROR] Attempt ${attempt}/${maxAttempts} failed: ${err.message}`)
-      }
-
-      // If attempts remain, wait before next retry with exponential backoff
-      if (attempt < maxAttempts) {
-        const delayMs = retryDelays[attempt - 1] || 2000
-        console.log(`[SMTP RETRY] Waiting ${delayMs}ms before attempt ${attempt + 1}...`)
-        await sleep(delayMs)
+        console.error(`[SMTP SEND ERROR] Attempt ${attempt}/${attemptsConfig.length} (port ${port}) failed: ${err.message}`)
       }
     }
   }
 
-  console.error(`[SMTP DISPATCH FAILED] All ${maxAttempts} attempts exhausted for ${toEmail}. Last error: ${lastError?.message}`)
+  console.error(`[SMTP DISPATCH FAILED] All ${attemptsConfig.length} attempts exhausted for ${toEmail}. Last error: ${lastError?.message}`)
   const error = new Error('Unable to send OTP email. Please try again.')
   error.statusCode = 500
   throw error
