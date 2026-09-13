@@ -39,6 +39,22 @@ const getTransporter = () => {
   return transporter
 }
 
+const SEND_TIMEOUT_MS = 10000
+
+const sendMailWithTimeout = (mailer, mailOptions, timeoutMs = SEND_TIMEOUT_MS) => {
+  return Promise.race([
+    mailer.sendMail(mailOptions),
+    new Promise((_, reject) => {
+      const timer = setTimeout(() => {
+        const timeoutErr = new Error(`SMTP dispatch timed out after ${timeoutMs / 1000}s`)
+        timeoutErr.code = 'ETIMEDOUT'
+        reject(timeoutErr)
+      }, timeoutMs)
+      if (timer.unref) timer.unref()
+    })
+  ])
+}
+
 /**
  * Sends OTP email via Gmail SMTP (nodemailer).
  * Requires a Gmail App Password (Google Account -> Security -> 2-Step Verification -> App passwords).
@@ -68,7 +84,7 @@ export const sendOtpEmail = async (toEmail, otpCode) => {
   let info
 
   try {
-    info = await mailer.sendMail({
+    info = await sendMailWithTimeout(mailer, {
       from: `"${senderName}" <${gmailUser}>`,
       to: toEmail,
       subject: `${otpCode} is your DevFix AI Verification Code`,
@@ -84,7 +100,7 @@ export const sendOtpEmail = async (toEmail, otpCode) => {
       throw error
     }
 
-    const error = new Error('Failed to send OTP email. Please check the email address or try again later.')
+    const error = new Error('Unable to send OTP email. Please try again.')
     error.statusCode = 502
     throw error
   }

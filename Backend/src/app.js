@@ -15,6 +15,7 @@ app.use(helmet({
 }))
 
 const defaultOrigins = [
+  'https://devfix-ai.vercel.app',
   'http://localhost:5173',
   'http://localhost:5174',
   'http://127.0.0.1:5173',
@@ -24,14 +25,18 @@ const defaultOrigins = [
 const envOrigins = [
   ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : []),
   ...(process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',') : [])
-].map(origin => origin.trim()).filter(Boolean)
+].map(origin => origin.trim().replace(/\/+$/, '')).filter(Boolean)
 
 const allowedOrigins = Array.from(new Set([...defaultOrigins, ...envOrigins]))
 
 const corsOptions = {
   origin: (origin, callback) => {
     // Allow requests with no origin (e.g. mobile apps, curl, server-to-server)
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!origin) {
+      return callback(null, true)
+    }
+    const normalizedOrigin = origin.replace(/\/+$/, '')
+    if (allowedOrigins.includes(normalizedOrigin) || allowedOrigins.includes(origin)) {
       return callback(null, true)
     }
     return callback(new Error(`CORS blocked for origin: ${origin}`))
@@ -52,6 +57,14 @@ app.use(express.urlencoded({ extended: true }))
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'))
 }
+
+// Health Check Routes for Render and monitoring
+app.get(['/', '/health'], (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    service: 'DevFix AI Backend'
+  })
+})
 
 // Mount API Routes
 app.use('/api', routes)
