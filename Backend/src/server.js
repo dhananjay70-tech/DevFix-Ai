@@ -1,3 +1,8 @@
+import dns from 'node:dns'
+if (typeof dns.setDefaultResultOrder === 'function') {
+  dns.setDefaultResultOrder('ipv4first')
+}
+
 import 'dotenv/config'
 import app from './app.js'
 import { isGithubConfigured } from './services/githubService.js'

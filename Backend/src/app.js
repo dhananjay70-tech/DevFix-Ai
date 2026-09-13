@@ -15,6 +15,7 @@ app.use(helmet({
 }))
 
 const defaultOrigins = [
+  'https://dev-fix-ai.vercel.app',
   'https://devfix-ai.vercel.app',
   'http://localhost:5173',
   'http://localhost:5174',
@@ -36,7 +37,12 @@ const corsOptions = {
       return callback(null, true)
     }
     const normalizedOrigin = origin.replace(/\/+$/, '')
-    if (allowedOrigins.includes(normalizedOrigin) || allowedOrigins.includes(origin)) {
+    const isAllowed =
+      allowedOrigins.includes(normalizedOrigin) ||
+      allowedOrigins.includes(origin) ||
+      /^https:\/\/dev-?fix-?ai.*\.vercel\.app$/.test(normalizedOrigin)
+
+    if (isAllowed) {
       return callback(null, true)
     }
     return callback(new Error(`CORS blocked for origin: ${origin}`))

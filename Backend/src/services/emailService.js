@@ -55,9 +55,11 @@ const sendMailWithTimeout = (mailer, mailOptions, timeoutMs = SEND_TIMEOUT_MS) =
   ])
 }
 
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms))
+
 /**
  * Sends OTP email via Gmail SMTP (nodemailer).
- * Requires a Gmail App Password (Google Account -> Security -> 2-Step Verification -> App passwords).
+ * Implements exponential backoff retry (2 retries) and IPv4 enforcement for resilient delivery.
  */
 export const sendOtpEmail = async (toEmail, otpCode) => {
   const gmailUser = process.env.GMAIL_USER || process.env.SMTP_USER
@@ -79,32 +81,60 @@ export const sendOtpEmail = async (toEmail, otpCode) => {
     </div>
   `
 
-  console.log(`[SMTP DISPATCH] Dispatching OTP email to ${toEmail} via Gmail SMTP...`)
-
-  let info
-
-  try {
-    info = await sendMailWithTimeout(mailer, {
-      from: `"${senderName}" <${gmailUser}>`,
-      to: toEmail,
-      subject: `${otpCode} is your DevFix AI Verification Code`,
-      html: htmlContent
-    })
-  } catch (sendErr) {
-    console.error(`[SMTP SEND ERROR]: ${sendErr.message}`)
-    
-    // Gmail auth failures (bad app password, blocked login) surface as EAUTH/invalid login
-    if (sendErr.code === 'EAUTH' || sendErr.responseCode === 535) {
-      const error = new Error('Authentication failed with the email provider. Please verify GMAIL_USER and GMAIL_APP_PASSWORD.')
-      error.statusCode = 400
-      throw error
-    }
-
-    const error = new Error('Unable to send OTP email. Please try again.')
-    error.statusCode = 502
-    throw error
+  const mailOptions = {
+    from: `"${senderName}" <${gmailUser}>`,
+    to: toEmail,
+    subject: `${otpCode} is your DevFix AI Verification Code`,
+    html: htmlContent
   }
 
-  console.log(`[SMTP SEND SUCCESS] Email accepted for ${toEmail}. MessageId: ${info.messageId}`)
-  return info.messageId
+  const maxRetries = 2
+  const maxAttempts = maxRetries + 1
+  const retryDelays = [1500, 3000]
+
+  let lastError = null
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      console.log(`[SMTP DISPATCH] Attempt ${attempt}/${maxAttempts}: Dispatching OTP email to ${toEmail} via Gmail SMTP...`)
+
+      const info = await sendMailWithTimeout(mailer, mailOptions, SEND_TIMEOUT_MS)
+      console.log(`[SMTP SEND SUCCESS] Email accepted for ${toEmail} on attempt ${attempt}. MessageId: ${info.messageId}`)
+      return info.messageId
+    } catch (err) {
+      lastError = err
+
+      // Check for authentication / credential failures (Fail fast, do not retry invalid credentials)
+      if (err.code === 'EAUTH' || err.responseCode === 535) {
+        console.error(`[SMTP AUTH ERROR] Invalid Gmail credentials or app password: ${err.message}`)
+        const authErr = new Error('Authentication failed with the email provider. Please verify GMAIL_USER and GMAIL_APP_PASSWORD.')
+        authErr.statusCode = 500
+        throw authErr
+      }
+
+      // Categorize network-level failures (ENETUNREACH, ETIMEDOUT, etc.) vs generic errors
+      const isNetworkError =
+        ['ENETUNREACH', 'ETIMEDOUT', 'ECONNREFUSED', 'ESOCKETTIMEDOUT', 'EHOSTUNREACH', 'ECONNRESET'].includes(err.code) ||
+        err.message?.includes('timeout') ||
+        err.message?.includes('Connection timeout')
+
+      if (isNetworkError) {
+        console.error(`[SMTP NETWORK ERROR] Attempt ${attempt}/${maxAttempts} failed: ${err.code || 'TIMEOUT'} - ${err.message}`)
+      } else {
+        console.error(`[SMTP SEND ERROR] Attempt ${attempt}/${maxAttempts} failed: ${err.message}`)
+      }
+
+      // If attempts remain, wait before next retry with exponential backoff
+      if (attempt < maxAttempts) {
+        const delayMs = retryDelays[attempt - 1] || 2000
+        console.log(`[SMTP RETRY] Waiting ${delayMs}ms before attempt ${attempt + 1}...`)
+        await sleep(delayMs)
+      }
+    }
+  }
+
+  console.error(`[SMTP DISPATCH FAILED] All ${maxAttempts} attempts exhausted for ${toEmail}. Last error: ${lastError?.message}`)
+  const error = new Error('Unable to send OTP email. Please try again.')
+  error.statusCode = 500
+  throw error
 }
