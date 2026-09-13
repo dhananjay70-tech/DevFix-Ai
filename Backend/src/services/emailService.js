@@ -1,48 +1,33 @@
 import 'dotenv/config'
 import nodemailer from 'nodemailer'
-import dns from 'dns'
 
 let transporter = null
 
 const getTransporter = () => {
-  const host = process.env.SMTP_HOST || 'smtp.gmail.com'
-  const user = process.env.SMTP_USER || process.env.GMAIL_USER
-  const pass = process.env.SMTP_PASS || process.env.SMTP_PASSWORD || process.env.GMAIL_APP_PASSWORD
+  const gmailUser = process.env.GMAIL_USER || process.env.SMTP_USER
+  const gmailAppPassword = process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS || process.env.SMTP_PASSWORD
 
   if (
-    !user ||
-    !pass ||
-    user === 'your_gmail_address@gmail.com' ||
-    pass === 'your_16_character_app_password'
+    !gmailUser ||
+    !gmailAppPassword ||
+    gmailUser === 'your_gmail_address@gmail.com' ||
+    gmailAppPassword === 'your_16_character_app_password'
   ) {
-    console.error('[SMTP CONFIG ERROR] SMTP credentials missing or placeholder in environment')
-    const configErr = new Error('Email service configuration error: SMTP credentials are not configured on the server.')
+    console.error('[SMTP CONFIG ERROR] GMAIL_USER / GMAIL_APP_PASSWORD missing or placeholder in environment')
+    const configErr = new Error('Email service configuration error: GMAIL_USER/GMAIL_APP_PASSWORD is not configured in server environment.')
     configErr.statusCode = 500
     throw configErr
   }
 
-  const rawPort = process.env.SMTP_PORT
-  const port = rawPort ? parseInt(rawPort, 10) : (host === 'smtp.gmail.com' ? 587 : 587)
-  const secure = process.env.SMTP_SECURE !== undefined
-    ? process.env.SMTP_SECURE === 'true'
-    : port === 465
-
   if (!transporter) {
     transporter = nodemailer.createTransport({
-      host,
-      port,
-      secure,
+      host: process.env.SMTP_HOST || 'smtp.gmail.com',
+      port: process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : 465,
+      secure: process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) === 465 : true,
+      family: 4, // Force IPv4 to prevent ENETUNREACH errors on cloud container networks (e.g. Render)
       auth: {
-        user,
-        pass
-      },
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
-      socketTimeout: 15000,
-      dnsTimeout: 5000,
-      // Force IPv4 DNS lookup to prevent ENETUNREACH on IPv6-unreachable cloud container networks (e.g. Render)
-      lookup: (hostname, options, callback) => {
-        return dns.lookup(hostname, { ...options, family: 4 }, callback)
+        user: gmailUser,
+        pass: gmailAppPassword
       }
     })
   }
@@ -51,12 +36,12 @@ const getTransporter = () => {
 }
 
 /**
- * Sends OTP email via configured SMTP (nodemailer).
+ * Sends OTP email via Gmail SMTP (nodemailer).
+ * Requires a Gmail App Password (Google Account -> Security -> 2-Step Verification -> App passwords).
  */
 export const sendOtpEmail = async (toEmail, otpCode) => {
-  const user = process.env.SMTP_USER || process.env.GMAIL_USER
-  const senderName = process.env.SMTP_FROM_NAME || process.env.GMAIL_SENDER_NAME || 'DevFix AI'
-  const senderEmail = process.env.SMTP_FROM_EMAIL || user
+  const gmailUser = process.env.GMAIL_USER || process.env.SMTP_USER
+  const senderName = process.env.GMAIL_SENDER_NAME || process.env.SMTP_FROM_NAME || 'DevFix AI'
   const mailer = getTransporter()
 
   const htmlContent = `
@@ -74,13 +59,13 @@ export const sendOtpEmail = async (toEmail, otpCode) => {
     </div>
   `
 
-  console.log(`[SMTP DISPATCH] Dispatching OTP email to ${toEmail}...`)
+  console.log(`[SMTP DISPATCH] Dispatching OTP email to ${toEmail} via Gmail SMTP...`)
 
   let info
 
   try {
     info = await mailer.sendMail({
-      from: `"${senderName}" <${senderEmail}>`,
+      from: `"${senderName}" <${gmailUser}>`,
       to: toEmail,
       subject: `${otpCode} is your DevFix AI Verification Code`,
       html: htmlContent
@@ -88,9 +73,9 @@ export const sendOtpEmail = async (toEmail, otpCode) => {
   } catch (sendErr) {
     console.error(`[SMTP SEND ERROR]: ${sendErr.message}`)
     
-    // Auth failures (invalid credentials)
+    // Gmail auth failures (bad app password, blocked login) surface as EAUTH/invalid login
     if (sendErr.code === 'EAUTH' || sendErr.responseCode === 535) {
-      const error = new Error('Authentication failed with the email provider. Please verify SMTP credentials.')
+      const error = new Error('Authentication failed with the email provider. Please verify GMAIL_USER and GMAIL_APP_PASSWORD.')
       error.statusCode = 400
       throw error
     }
