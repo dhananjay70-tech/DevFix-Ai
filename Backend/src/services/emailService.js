@@ -1,32 +1,48 @@
-import dotenv from 'dotenv'
+import 'dotenv/config'
 import nodemailer from 'nodemailer'
-
-dotenv.config()
+import dns from 'dns'
 
 let transporter = null
 
 const getTransporter = () => {
-  const gmailUser = process.env.GMAIL_USER
-  const gmailAppPassword = process.env.GMAIL_APP_PASSWORD
+  const host = process.env.SMTP_HOST || 'smtp.gmail.com'
+  const user = process.env.SMTP_USER || process.env.GMAIL_USER
+  const pass = process.env.SMTP_PASS || process.env.SMTP_PASSWORD || process.env.GMAIL_APP_PASSWORD
 
   if (
-    !gmailUser ||
-    !gmailAppPassword ||
-    gmailUser === 'your_gmail_address@gmail.com' ||
-    gmailAppPassword === 'your_16_character_app_password'
+    !user ||
+    !pass ||
+    user === 'your_gmail_address@gmail.com' ||
+    pass === 'your_16_character_app_password'
   ) {
-    console.error('[SMTP CONFIG ERROR] GMAIL_USER / GMAIL_APP_PASSWORD missing or placeholder in .env')
-    const configErr = new Error('Email service configuration error: GMAIL_USER/GMAIL_APP_PASSWORD is missing in server environment.')
+    console.error('[SMTP CONFIG ERROR] SMTP credentials missing or placeholder in environment')
+    const configErr = new Error('Email service configuration error: SMTP credentials are not configured on the server.')
     configErr.statusCode = 500
     throw configErr
   }
 
+  const rawPort = process.env.SMTP_PORT
+  const port = rawPort ? parseInt(rawPort, 10) : (host === 'smtp.gmail.com' ? 587 : 587)
+  const secure = process.env.SMTP_SECURE !== undefined
+    ? process.env.SMTP_SECURE === 'true'
+    : port === 465
+
   if (!transporter) {
     transporter = nodemailer.createTransport({
-      service: 'gmail',
+      host,
+      port,
+      secure,
       auth: {
-        user: gmailUser,
-        pass: gmailAppPassword
+        user,
+        pass
+      },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000,
+      dnsTimeout: 5000,
+      // Force IPv4 DNS lookup to prevent ENETUNREACH on IPv6-unreachable cloud container networks (e.g. Render)
+      lookup: (hostname, options, callback) => {
+        return dns.lookup(hostname, { ...options, family: 4 }, callback)
       }
     })
   }
@@ -35,12 +51,12 @@ const getTransporter = () => {
 }
 
 /**
- * Sends OTP email via Gmail SMTP (nodemailer).
- * Requires a Gmail App Password (Google Account -> Security -> 2-Step Verification -> App passwords).
+ * Sends OTP email via configured SMTP (nodemailer).
  */
 export const sendOtpEmail = async (toEmail, otpCode) => {
-  const gmailUser = process.env.GMAIL_USER
-  const senderName = process.env.GMAIL_SENDER_NAME || 'DevFix AI'
+  const user = process.env.SMTP_USER || process.env.GMAIL_USER
+  const senderName = process.env.SMTP_FROM_NAME || process.env.GMAIL_SENDER_NAME || 'DevFix AI'
+  const senderEmail = process.env.SMTP_FROM_EMAIL || user
   const mailer = getTransporter()
 
   const htmlContent = `
@@ -58,28 +74,29 @@ export const sendOtpEmail = async (toEmail, otpCode) => {
     </div>
   `
 
-  console.log(`[SMTP DISPATCH] Dispatching OTP email to ${toEmail} via Gmail SMTP...`)
+  console.log(`[SMTP DISPATCH] Dispatching OTP email to ${toEmail}...`)
 
   let info
 
   try {
     info = await mailer.sendMail({
-      from: `"${senderName}" <${gmailUser}>`,
+      from: `"${senderName}" <${senderEmail}>`,
       to: toEmail,
       subject: `${otpCode} is your DevFix AI Verification Code`,
       html: htmlContent
     })
   } catch (sendErr) {
     console.error(`[SMTP SEND ERROR]: ${sendErr.message}`)
-    const error = new Error(`Failed to send OTP email: ${sendErr.message}`)
-
-    // Gmail auth failures (bad app password, blocked login) surface as EAUTH/invalid login
+    
+    // Auth failures (invalid credentials)
     if (sendErr.code === 'EAUTH' || sendErr.responseCode === 535) {
+      const error = new Error('Authentication failed with the email provider. Please verify SMTP credentials.')
       error.statusCode = 400
-    } else {
-      error.statusCode = 502
+      throw error
     }
 
+    const error = new Error('Failed to send OTP email. Please check the email address or try again later.')
+    error.statusCode = 502
     throw error
   }
 
