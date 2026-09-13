@@ -1,7 +1,80 @@
 import 'dotenv/config'
 import nodemailer from 'nodemailer'
 
-const getEmailCredentials = () => {
+const SEND_TIMEOUT_MS = 10000
+
+/**
+ * Build the branded OTP HTML email body.
+ */
+const buildOtpHtml = (otpCode) => `
+  <div style="font-family: Arial, sans-serif; background-color: #090a0f; color: #f3f4f6; padding: 30px; border-radius: 8px; max-width: 500px; margin: 0 auto;">
+    <h2 style="color: #6366f1; margin-bottom: 8px;">DevFix AI Authentication</h2>
+    <p style="font-size: 14px; color: #9ca3af; margin-bottom: 20px;">
+      Use the following 6-digit One-Time Password (OTP) to log into your account. This code is valid for 5 minutes.
+    </p>
+    <div style="background-color: #121520; border: 1px solid #1f2434; padding: 18px; border-radius: 6px; font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #818cf8; text-align: center; margin: 20px 0;">
+      ${otpCode}
+    </div>
+    <p style="font-size: 12px; color: #6b7280; margin-top: 20px;">
+      If you did not request this OTP code, please ignore this email.
+    </p>
+  </div>
+`
+
+// ---------------------------------------------------------------------------
+// Provider 1: Resend HTTP API (works on Render — uses HTTPS port 443)
+// ---------------------------------------------------------------------------
+
+const sendViaResend = async (toEmail, otpCode, senderName) => {
+  const apiKey = process.env.RESEND_API_KEY
+  if (!apiKey) return null // Signal: Resend not configured, try fallback
+
+  const fromAddress = process.env.RESEND_FROM || `${senderName} <onboarding@resend.dev>`
+
+  const body = JSON.stringify({
+    from: fromAddress,
+    to: [toEmail],
+    subject: `${otpCode} is your DevFix AI Verification Code`,
+    html: buildOtpHtml(otpCode)
+  })
+
+  console.log(`[EMAIL DISPATCH] Sending OTP to ${toEmail} via Resend API...`)
+
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), SEND_TIMEOUT_MS)
+
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body,
+      signal: controller.signal
+    })
+
+    const data = await res.json()
+
+    if (!res.ok) {
+      console.error(`[RESEND API ERROR] ${res.status}: ${JSON.stringify(data)}`)
+      const err = new Error(data.message || `Resend API error ${res.status}`)
+      err.statusCode = res.status === 401 || res.status === 403 ? 500 : 500
+      throw err
+    }
+
+    console.log(`[EMAIL SEND SUCCESS] Resend accepted email for ${toEmail}. Id: ${data.id}`)
+    return data.id
+  } finally {
+    clearTimeout(timeout)
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Provider 2: Gmail SMTP via Nodemailer (local development fallback)
+// ---------------------------------------------------------------------------
+
+const sendViaGmailSmtp = async (toEmail, otpCode, senderName) => {
   const gmailUser = process.env.GMAIL_USER || process.env.SMTP_USER
   const gmailAppPassword = process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS || process.env.SMTP_PASSWORD
 
@@ -11,24 +84,18 @@ const getEmailCredentials = () => {
     gmailUser === 'your_gmail_address@gmail.com' ||
     gmailAppPassword === 'your_16_character_app_password'
   ) {
-    console.error('[SMTP CONFIG ERROR] GMAIL_USER / GMAIL_APP_PASSWORD missing or placeholder in environment')
-    const configErr = new Error('Email service configuration error: GMAIL_USER/GMAIL_APP_PASSWORD is not configured in server environment.')
+    console.error('[SMTP CONFIG ERROR] GMAIL_USER / GMAIL_APP_PASSWORD missing or placeholder')
+    const configErr = new Error('Email service not configured. Set RESEND_API_KEY for production or GMAIL_USER/GMAIL_APP_PASSWORD for development.')
     configErr.statusCode = 500
     throw configErr
   }
 
-  return { gmailUser, gmailAppPassword }
-}
-
-const createTransporter = (port = 465, secure = true) => {
-  const { gmailUser, gmailAppPassword } = getEmailCredentials()
-
-  return nodemailer.createTransport({
+  const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
-    port,
-    secure,
-    ...(port === 587 ? { requireTLS: true } : {}),
-    family: 4, // Force IPv4 to prevent ENETUNREACH on cloud environments (Render)
+    port: 587,
+    secure: false,
+    requireTLS: true,
+    family: 4, // Force IPv4
     auth: {
       user: gmailUser,
       pass: gmailAppPassword
@@ -37,108 +104,89 @@ const createTransporter = (port = 465, secure = true) => {
     greetingTimeout: 8000,
     socketTimeout: 10000
   })
-}
-
-const SEND_TIMEOUT_MS = 10000
-
-const sendMailWithTimeout = (mailer, mailOptions, timeoutMs = SEND_TIMEOUT_MS) => {
-  return Promise.race([
-    mailer.sendMail(mailOptions),
-    new Promise((_, reject) => {
-      const timer = setTimeout(() => {
-        const timeoutErr = new Error(`SMTP dispatch timed out after ${timeoutMs / 1000}s`)
-        timeoutErr.code = 'ETIMEDOUT'
-        reject(timeoutErr)
-      }, timeoutMs)
-      if (timer.unref) timer.unref()
-    })
-  ])
-}
-
-const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms))
-
-/**
- * Sends OTP email via Gmail SMTP (nodemailer).
- * Uses direct SSL port 465 with forced IPv4, retries with exponential backoff,
- * and falls back to port 587 if needed.
- */
-export const sendOtpEmail = async (toEmail, otpCode) => {
-  const { gmailUser } = getEmailCredentials()
-  const senderName = process.env.GMAIL_SENDER_NAME || process.env.SMTP_FROM_NAME || 'DevFix AI'
-
-  const htmlContent = `
-    <div style="font-family: Arial, sans-serif; background-color: #090a0f; color: #f3f4f6; padding: 30px; border-radius: 8px; max-width: 500px; margin: 0 auto;">
-      <h2 style="color: #6366f1; margin-bottom: 8px;">DevFix AI Authentication</h2>
-      <p style="font-size: 14px; color: #9ca3af; margin-bottom: 20px;">
-        Use the following 6-digit One-Time Password (OTP) to log into your account. This code is valid for 5 minutes.
-      </p>
-      <div style="background-color: #121520; border: 1px solid #1f2434; padding: 18px; border-radius: 6px; font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #818cf8; text-align: center; margin: 20px 0;">
-        ${otpCode}
-      </div>
-      <p style="font-size: 12px; color: #6b7280; margin-top: 20px;">
-        If you did not request this OTP code, please ignore this email.
-      </p>
-    </div>
-  `
 
   const mailOptions = {
     from: `"${senderName}" <${gmailUser}>`,
     to: toEmail,
     subject: `${otpCode} is your DevFix AI Verification Code`,
-    html: htmlContent
+    html: buildOtpHtml(otpCode)
   }
 
-  // Attempt configurations: primary port 465 (SSL), retry on 465, fallback to 587 (STARTTLS)
-  const attemptsConfig = [
-    { port: 465, secure: true, delay: 0 },
-    { port: 465, secure: true, delay: 1500 },
-    { port: 587, secure: false, delay: 2500 }
-  ]
+  console.log(`[EMAIL DISPATCH] Sending OTP to ${toEmail} via Gmail SMTP...`)
 
+  const info = await Promise.race([
+    transporter.sendMail(mailOptions),
+    new Promise((_, reject) => {
+      const timer = setTimeout(() => {
+        const err = new Error(`SMTP dispatch timed out after ${SEND_TIMEOUT_MS / 1000}s`)
+        err.code = 'ETIMEDOUT'
+        reject(err)
+      }, SEND_TIMEOUT_MS)
+      if (timer.unref) timer.unref()
+    })
+  ])
+
+  console.log(`[EMAIL SEND SUCCESS] Gmail SMTP accepted email for ${toEmail}. MessageId: ${info.messageId}`)
+  return info.messageId
+}
+
+// ---------------------------------------------------------------------------
+// Public API — called by otpService.js
+// ---------------------------------------------------------------------------
+
+/**
+ * Sends OTP email via the best available provider:
+ *   1. Resend HTTP API (if RESEND_API_KEY is set — works on Render/cloud)
+ *   2. Gmail SMTP fallback (for local development)
+ *
+ * Includes retry with exponential backoff (2 retries, 1.5s / 3s delays).
+ */
+export const sendOtpEmail = async (toEmail, otpCode) => {
+  const senderName = process.env.GMAIL_SENDER_NAME || process.env.SMTP_FROM_NAME || 'DevFix AI'
+
+  const maxAttempts = 3
+  const retryDelays = [1500, 3000]
   let lastError = null
 
-  for (let i = 0; i < attemptsConfig.length; i++) {
-    const attempt = i + 1
-    const { port, secure, delay } = attemptsConfig[i]
-
-    if (delay > 0) {
-      console.log(`[SMTP RETRY] Waiting ${delay}ms before attempt ${attempt}...`)
-      await sleep(delay)
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    if (attempt > 1) {
+      const delay = retryDelays[attempt - 2] || 2000
+      console.log(`[EMAIL RETRY] Waiting ${delay}ms before attempt ${attempt}/${maxAttempts}...`)
+      await new Promise(r => setTimeout(r, delay))
     }
 
     try {
-      console.log(`[SMTP DISPATCH] Attempt ${attempt}/${attemptsConfig.length}: Dispatching OTP email to ${toEmail} via Gmail SMTP (port ${port}, IPv4)...`)
+      // Try Resend first (production)
+      const resendResult = await sendViaResend(toEmail, otpCode, senderName)
+      if (resendResult !== null) return resendResult
 
-      const mailer = createTransporter(port, secure)
-      const info = await sendMailWithTimeout(mailer, mailOptions, SEND_TIMEOUT_MS)
-      console.log(`[SMTP SEND SUCCESS] Email accepted for ${toEmail} on attempt ${attempt} (port ${port}). MessageId: ${info.messageId}`)
-      return info.messageId
+      // Fall back to Gmail SMTP (development)
+      return await sendViaGmailSmtp(toEmail, otpCode, senderName)
     } catch (err) {
       lastError = err
 
-      // Check for authentication / credential failures (Fail fast, do not retry invalid credentials)
-      if (err.code === 'EAUTH' || err.responseCode === 535) {
-        console.error(`[SMTP AUTH ERROR] Invalid Gmail credentials or app password: ${err.message}`)
-        const authErr = new Error('Authentication failed with the email provider. Please verify GMAIL_USER and GMAIL_APP_PASSWORD.')
+      // Auth/config errors: fail fast, don't retry
+      if (err.code === 'EAUTH' || err.responseCode === 535 || err.statusCode === 401 || err.statusCode === 403) {
+        console.error(`[EMAIL AUTH ERROR] ${err.message}`)
+        const authErr = new Error('Email service authentication failed. Check your API key or credentials.')
         authErr.statusCode = 500
         throw authErr
       }
 
-      // Categorize network-level failures (ENETUNREACH, ETIMEDOUT, etc.) vs generic errors
-      const isNetworkError =
-        ['ENETUNREACH', 'ETIMEDOUT', 'ECONNREFUSED', 'ESOCKETTIMEDOUT', 'EHOSTUNREACH', 'ECONNRESET'].includes(err.code) ||
-        err.message?.includes('timeout') ||
-        err.message?.includes('Connection timeout')
+      // Categorize for log triage
+      const isNetwork = ['ENETUNREACH', 'ETIMEDOUT', 'ECONNREFUSED', 'ESOCKETTIMEDOUT', 'EHOSTUNREACH', 'ECONNRESET'].includes(err.code) ||
+        err.name === 'AbortError' ||
+        err.message?.includes('timeout')
 
-      if (isNetworkError) {
-        console.error(`[SMTP NETWORK ERROR] Attempt ${attempt}/${attemptsConfig.length} (port ${port}) failed: ${err.code || 'TIMEOUT'} - ${err.message}`)
+      if (isNetwork) {
+        console.error(`[EMAIL NETWORK ERROR] Attempt ${attempt}/${maxAttempts}: ${err.code || 'TIMEOUT'} - ${err.message}`)
       } else {
-        console.error(`[SMTP SEND ERROR] Attempt ${attempt}/${attemptsConfig.length} (port ${port}) failed: ${err.message}`)
+        console.error(`[EMAIL SEND ERROR] Attempt ${attempt}/${maxAttempts}: ${err.message}`)
       }
     }
   }
 
-  console.error(`[SMTP DISPATCH FAILED] All ${attemptsConfig.length} attempts exhausted for ${toEmail}. Last error: ${lastError?.message}`)
+  console.error(`[EMAIL DISPATCH FAILED] All ${maxAttempts} attempts exhausted for ${toEmail}. Last error: ${lastError?.message}`)
   const error = new Error('Unable to send OTP email. Please try again.')
   error.statusCode = 500
   throw error
